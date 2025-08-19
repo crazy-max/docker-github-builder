@@ -59,6 +59,10 @@ on:
         type: string
         description: "List of target platforms to build"
         required: false
+      build-sbom:
+        type: string
+        description: "Generate SBOM attestation for the build (shorthand for --attest=type=sbom)"
+        required: false
     secrets:
       login-password:
         description: "Password or personal access token used to log against the Docker registry"
@@ -106,7 +110,7 @@ jobs:
           platforms: ${{ inputs.build-platforms }}
           tags: ${{ steps.meta.outputs.tags }}
           outputs: type=image,oci-artifact=true,push=${{ inputs.push }}
-          sbom: true
+          sbom: ${{ inputs.build-sbom }}
           labels: ${{ inputs.set-meta-labels && steps.meta.outputs.labels || '' }}
           annotations: ${{ inputs.set-meta-annotations && steps.meta.outputs.annotations || '' }}
           github-token: ${{ secrets.github-token || github.token }}
@@ -194,4 +198,3 @@ jobs:
                 });
               }
             }
-
