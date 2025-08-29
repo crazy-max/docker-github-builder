@@ -209,16 +209,33 @@ jobs:
           COSIGN_EXPERIMENTAL: 1
         with:
           script: |
+            const maxRetries = 100;
             const digests = core.getMultilineInput('digests');
             for (const digest of digests) {
               const manifest = `${core.getInput('image-name')}@${digest}`;
-              await exec.getExecOutput('cosign', ['-d', 'verify', '--experimental-oci11', '--certificate-identity-regexp', `^https://github.com/docker/github-builder-experimental/.github/workflows/build.yml.*$`, '--certificate-oidc-issuer', 'https://token.actions.githubusercontent.com', manifest], {
-                ignoreReturnCode: true
-              }).then(res => {
-                if (res.exitCode != 0) {
-                  core.warning(`Signature verification failed for ${manifest}`);
-                }
-              });
+              let attempt = 1;
+              let res;
+              let retry = true;
+              do {
+                core.info(`#####`);
+                core.info(`##### Verifying ${manifest} (attempt ${attempt}/${maxRetries})`);
+                core.info(`#####`);
+                await new Promise(resolve => setTimeout(resolve, 5000));
+                res = await exec.getExecOutput('cosign', [
+                  '-d', 'verify',
+                  '--experimental-oci11',
+                  '--certificate-identity-regexp', `^https://github.com/docker/github-builder-experimental/.github/workflows/build.yml.*$`,
+                  '--certificate-oidc-issuer', 'https://token.actions.githubusercontent.com',
+                  manifest
+                ], {
+                  ignoreReturnCode: true
+                });
+                if (res.exitCode != 10) retry = false;
+                attempt++;
+              } while (retry && attempt < maxRetries);
+              if (res.exitCode != 0) {
+                core.setFailed(`Signature verification failed for ${manifest}`);
+              }
             }
       -
         name: Create manifest
