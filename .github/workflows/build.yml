@@ -173,15 +173,23 @@ jobs:
               core.setOutput('digests', attestationDigests.join('\n'));
             });
       -
+        name: Checkout cosign
+        uses: actions/checkout@v5
+        with:
+          repository: sigstore/cosign
+          ref: v2.6.0
+          path: cosign-tmp
+      -
         name: Set up Go for cosign
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
           go-version: "1.25.1" # https://github.com/sigstore/cosign/blob/2ec2734e8407ea90ea36103a882b3be2195567eb/Dockerfile#L18
+          cache-dependency-path: cosign-tmp/go.sum
       -
         name: Build and install cosign
+        working-directory: cosign-tmp
         run: |
-          cd /tmp
-          GOBIN=/usr/local/bin go install github.com/sigstore/cosign/v2/cmd/cosign@v2.6.0
+          make install
           cosign version
       -
         name: Sign attestation manifest (registry)
