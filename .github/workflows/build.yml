@@ -176,8 +176,8 @@ jobs:
         name: Checkout cosign
         uses: actions/checkout@v5
         with:
-          repository: sigstore/cosign
-          ref: v2.6.0
+          repository: crazy-max/cosign
+          ref: debug-oci-write
           path: cosign-tmp
       -
         name: Set up Go for cosign
