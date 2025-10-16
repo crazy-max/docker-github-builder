@@ -269,7 +269,7 @@ jobs:
           COSIGN_EXPERIMENTAL: 1
         with:
           script: |
-            const maxRetries = 100;
+            const maxRetries = 20;
             const digests = core.getMultilineInput('digests');
             for (const digest of digests) {
               const manifest = `${core.getInput('image-name')}@${digest}`;
@@ -280,7 +280,7 @@ jobs:
                 core.info(`#####`);
                 core.info(`##### Verifying ${manifest} (attempt ${attempt}/${maxRetries})`);
                 core.info(`#####`);
-                await new Promise(resolve => setTimeout(resolve, 5000));
+                await new Promise(resolve => setTimeout(resolve, 1000));
                 res = await exec.getExecOutput('cosign', [
                   '-d', 'verify',
                   '--experimental-oci11',
