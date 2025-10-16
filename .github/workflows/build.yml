@@ -249,8 +249,7 @@ jobs:
                 '-d', 'sign-blob', '--yes',
                 '--oidc-provider', 'github-actions',
                 '--oidc-issuer', 'https://token.actions.githubusercontent.com',
-                '--output-signature', `${attestation}.sig`,
-                '--output-certificate', `${attestation}.crt`,
+                '--bundle', `${attestation}.cosign.bundle`,
                 attestation
               ], {
                 ignoreReturnCode: true
@@ -320,8 +319,7 @@ jobs:
                 '-d', 'verify-blob',
                 '--certificate-identity-regexp', `^https://github.com/docker/github-builder-experimental/.github/workflows/build.yml.*$`,
                 '--certificate-oidc-issuer', 'https://token.actions.githubusercontent.com',
-                '--signature', `${attestation}.sig`,
-                '--certificate', `${attestation}.crt`,
+                '--bundle', `${attestation}.cosign.bundle`,
                 attestation
               ], {
                 ignoreReturnCode: true
