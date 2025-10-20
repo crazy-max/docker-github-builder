@@ -234,6 +234,7 @@ jobs:
           COSIGN_EXPERIMENTAL: 1
         with:
           script: |
+            const fs = require('fs');
             const localOutputDir = core.getInput('local-output-dir');
             
             const globber = await glob.create([`${localOutputDir}/**/provenance.json`, `${localOutputDir}/**/sbom*spdx.json`].join('\n'));
@@ -259,6 +260,11 @@ jobs:
               });
               if (res.stderr.length > 0 && res.exitCode != 0) {
                 throw new Error(res.stderr);
+              }
+              for (const file of [`${afn}.sigstore.json`, `${afn}.signed.json`]) {
+                if (fs.existsSync(file)) {
+                  fs.writeFileSync(file, JSON.stringify(JSON.parse(fs.readFileSync(file, 'utf8')), null, 2));
+                }
               }
             }
       -
