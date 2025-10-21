@@ -133,7 +133,7 @@ jobs:
           build-args: ${{ inputs.build-args }}
           platforms: ${{ inputs.build-platforms }}
           outputs: ${{ steps.prepare.outputs.output }}
-          provenance: mode=max
+          provenance: mode=max,version=v1
           sbom: ${{ inputs.build-sbom }}
           labels: ${{ inputs.set-meta-labels && steps.meta.outputs.labels || '' }}
           annotations: ${{ inputs.set-meta-annotations && steps.meta.outputs.annotations || '' }}
@@ -248,6 +248,7 @@ jobs:
                 '--oidc-issuer', 'https://token.actions.githubusercontent.com',
                 '--new-bundle-format',
                 '--predicate', `${baseDir}/provenance.json`,
+                '--type', 'https://slsa.dev/provenance/v1',
                 '--bundle', `${baseDir}/provenance.sigstore.json`,
                 `${baseDir}/provenance.json`
               ], {
