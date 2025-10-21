@@ -138,6 +138,8 @@ jobs:
           labels: ${{ inputs.set-meta-labels && steps.meta.outputs.labels || '' }}
           annotations: ${{ inputs.set-meta-annotations && steps.meta.outputs.annotations || '' }}
           github-token: ${{ secrets.github-token || github.token }}
+        env:
+          BUILDKIT_MULTI_PLATFORM: 1
       -
         name: List output
         if: ${{ inputs.build-output == 'local' }}
@@ -195,7 +197,7 @@ jobs:
               core.setOutput('digests', attestationDigests.join('\n'));
             });
       -
-        name: Sign attestation manifest (registry)
+        name: Signing (registry)
         if: ${{ inputs.build-output == 'registry' }}
         uses: actions/github-script@v7
         env:
@@ -226,7 +228,7 @@ jobs:
               }
             });
       -
-        name: Sign attestation manifest (local)
+        name: Signing (local)
         if: ${{ inputs.build-output == 'local' }}
         uses: actions/github-script@v7
         env:
@@ -237,33 +239,35 @@ jobs:
             const fs = require('fs');
             const localOutputDir = core.getInput('local-output-dir');
             
-            const globber = await glob.create([`${localOutputDir}/**/provenance.json`, `${localOutputDir}/**/sbom*spdx.json`].join('\n'));
-            const attestations = await globber.glob();
-            if (attestations.length == 0) {
-              core.setFailed('No attestation files found');
-              return;
-            }
-            
-            for (const attestation of attestations) {
-              const afn = attestation.replace(/\.json$/, "");
-              const res = await exec.getExecOutput('cosign', [
-                '-d', 'attest-blob', '--yes',
-                '--oidc-provider', 'github-actions',
-                '--oidc-issuer', 'https://token.actions.githubusercontent.com',
-                '--new-bundle-format',
-                '--predicate', attestation,
-                '--bundle', `${afn}.sigstore.json`,
-                '--output-file', `${afn}.signed.json`,
-                attestation
-              ], {
-                ignoreReturnCode: true
-              });
-              if (res.stderr.length > 0 && res.exitCode != 0) {
-                throw new Error(res.stderr);
+            const platformFolders = fs.readdirSync(localOutputDir, { withFileTypes: true }).filter(dirent => dirent.isDirectory()).map(dirent => dirent.name);
+            for (const platformFolder of platformFolders) {
+              const baseDir = `${localOutputDir}/${platformFolder}`;
+              const attestGlobber = await glob.create([`${baseDir}/provenance.json`, `${baseDir}/sbom*spdx.json`].join('\n'));
+              const attestations = await attestGlobber.glob();
+              if (attestations.length == 0) {
+                core.setFailed(`No attestation files found for ${platformFolder} platform`);
+                return;
               }
-              for (const file of [`${afn}.sigstore.json`, `${afn}.signed.json`]) {
-                if (fs.existsSync(file)) {
-                  fs.writeFileSync(file, JSON.stringify(JSON.parse(fs.readFileSync(file, 'utf8')), null, 2));
+              for (const attestation of attestations) {
+                const afn = attestation.replace(/\.json$/, "");
+                const res = await exec.getExecOutput('cosign', [
+                  '-d', 'attest-blob', '--yes',
+                  '--oidc-provider', 'github-actions',
+                  '--oidc-issuer', 'https://token.actions.githubusercontent.com',
+                  '--new-bundle-format',
+                  '--predicate', attestation,
+                  '--bundle', `${afn}.sigstore.json`,
+                  attestation
+                ], {
+                  ignoreReturnCode: true
+                });
+                if (res.stderr.length > 0 && res.exitCode != 0) {
+                  throw new Error(res.stderr);
+                }
+                for (const file of [`${afn}.sigstore.json`]) {
+                  if (fs.existsSync(file)) {
+                    fs.writeFileSync(file, JSON.stringify(JSON.parse(fs.readFileSync(file, 'utf8')), null, 2));
+                  }
                 }
               }
             }
@@ -315,29 +319,52 @@ jobs:
           COSIGN_EXPERIMENTAL: 1
         with:
           script: |
+            const fs = require('fs');
             const localOutputDir = core.getInput('local-output-dir');
+            const signArtifacts = core.getMultilineInput('sign-artifacts');
             
-            const globber = await glob.create([`${localOutputDir}/**/provenance.json`, `${localOutputDir}/**/sbom*spdx.json`].join('\n'));
-            const attestations = await globber.glob();
-            if (attestations.length == 0) {
-              core.setFailed('No attestation files found');
-              return;
-            }
-            
-            for (const attestation of attestations) {
-              const afn = attestation.replace(/\.json$/, "");
-              const res = await exec.getExecOutput('cosign', [
-                '-d', 'verify-blob-attestation',
-                '--certificate-identity-regexp', `^https://github.com/docker/github-builder-experimental/.github/workflows/build.yml.*$`,
-                '--certificate-oidc-issuer', 'https://token.actions.githubusercontent.com',
-                '--new-bundle-format',
-                '--bundle', `${afn}.sigstore.json`,
-                attestation
-              ], {
-                ignoreReturnCode: true
-              });
-              if (res.stderr.length > 0 && res.exitCode != 0) {
-                throw new Error(res.stderr);
+            const platformFolders = fs.readdirSync(localOutputDir, { withFileTypes: true }).filter(dirent => dirent.isDirectory()).map(dirent => dirent.name);
+            for (const platformFolder of platformFolders) {
+              const baseDir = `${localOutputDir}/${platformFolder}`;
+              const attestGlobber = await glob.create([`${baseDir}/provenance.json`, `${baseDir}/sbom*spdx.json`].join('\n'));
+              const attestations = await attestGlobber.glob();
+              if (attestations.length == 0) {
+                core.setFailed(`No attestation files found for ${platformFolder} platform`);
+                return;
+              }
+              for (const attestation of attestations) {
+                const afn = attestation.replace(/\.json$/, "");
+                const res = await exec.getExecOutput('cosign', [
+                  '-d', 'verify-blob-attestation',
+                  '--certificate-identity-regexp', `^https://github.com/docker/github-builder-experimental/.github/workflows/build.yml.*$`,
+                  '--certificate-oidc-issuer', 'https://token.actions.githubusercontent.com',
+                  '--new-bundle-format',
+                  '--bundle', `${afn}.sigstore.json`,
+                  attestation
+                ], {
+                  ignoreReturnCode: true
+                });
+                if (res.stderr.length > 0 && res.exitCode != 0) {
+                  throw new Error(res.stderr);
+                }
+              }
+              const artifactsGlobber = await glob.create(`${baseDir}/**/*`);
+              const artifacts = await artifactsGlobber.glob();
+              const filteredArtifacts = allArtifacts.filter(p => fs.statSync(p).isFile() && !/provenance\.json$/.test(p) && !/sbom.*spdx\.json$/.test(p) && !/\.sigstore\.json$/.test(p));
+              for (const artifact of filteredArtifacts) {
+                const res = await exec.getExecOutput('cosign', [
+                  '-d', 'verify-blob-attestation',
+                  '--certificate-identity-regexp', `^https://github.com/docker/github-builder-experimental/.github/workflows/build.yml.*$`,
+                  '--certificate-oidc-issuer', 'https://token.actions.githubusercontent.com',
+                  '--new-bundle-format',
+                  '--bundle', `provenance.sigstore.json`,
+                  artifact
+                ], {
+                  ignoreReturnCode: true
+                });
+                if (res.stderr.length > 0 && res.exitCode != 0) {
+                  throw new Error(res.stderr);
+                }
               }
             }
       -
