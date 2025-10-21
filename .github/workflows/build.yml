@@ -242,34 +242,21 @@ jobs:
             const platformFolders = fs.readdirSync(localOutputDir, { withFileTypes: true }).filter(dirent => dirent.isDirectory()).map(dirent => dirent.name);
             for (const platformFolder of platformFolders) {
               const baseDir = `${localOutputDir}/${platformFolder}`;
-              const attestGlobber = await glob.create([`${baseDir}/provenance.json`, `${baseDir}/sbom*spdx.json`].join('\n'));
-              const attestations = await attestGlobber.glob();
-              if (attestations.length == 0) {
-                core.setFailed(`No attestation files found for ${platformFolder} platform`);
-                return;
+              const res = await exec.getExecOutput('cosign', [
+                '-d', 'attest-blob', '--yes',
+                '--oidc-provider', 'github-actions',
+                '--oidc-issuer', 'https://token.actions.githubusercontent.com',
+                '--new-bundle-format',
+                '--predicate', `${baseDir}/provenance.json`,
+                '--bundle', `${baseDir}/provenance.sigstore.json`,
+                `${baseDir}/provenance.json`
+              ], {
+                ignoreReturnCode: true
+              });
+              if (res.stderr.length > 0 && res.exitCode != 0) {
+                throw new Error(res.stderr);
               }
-              for (const attestation of attestations) {
-                const afn = attestation.replace(/\.json$/, "");
-                const res = await exec.getExecOutput('cosign', [
-                  '-d', 'attest-blob', '--yes',
-                  '--oidc-provider', 'github-actions',
-                  '--oidc-issuer', 'https://token.actions.githubusercontent.com',
-                  '--new-bundle-format',
-                  '--predicate', attestation,
-                  '--bundle', `${afn}.sigstore.json`,
-                  attestation
-                ], {
-                  ignoreReturnCode: true
-                });
-                if (res.stderr.length > 0 && res.exitCode != 0) {
-                  throw new Error(res.stderr);
-                }
-                for (const file of [`${afn}.sigstore.json`]) {
-                  if (fs.existsSync(file)) {
-                    fs.writeFileSync(file, JSON.stringify(JSON.parse(fs.readFileSync(file, 'utf8')), null, 2));
-                  }
-                }
-              }
+              fs.writeFileSync(`${baseDir}/provenance.sigstore.json`, JSON.stringify(JSON.parse(fs.readFileSync(`${baseDir}/provenance.sigstore.json`, 'utf8')), null, 2));
             }
       -
         name: Verify signatures (registry)
@@ -326,38 +313,29 @@ jobs:
             const platformFolders = fs.readdirSync(localOutputDir, { withFileTypes: true }).filter(dirent => dirent.isDirectory()).map(dirent => dirent.name);
             for (const platformFolder of platformFolders) {
               const baseDir = `${localOutputDir}/${platformFolder}`;
-              const attestGlobber = await glob.create([`${baseDir}/provenance.json`, `${baseDir}/sbom*spdx.json`].join('\n'));
-              const attestations = await attestGlobber.glob();
-              if (attestations.length == 0) {
-                core.setFailed(`No attestation files found for ${platformFolder} platform`);
-                return;
-              }
-              for (const attestation of attestations) {
-                const afn = attestation.replace(/\.json$/, "");
-                const res = await exec.getExecOutput('cosign', [
-                  '-d', 'verify-blob-attestation',
-                  '--certificate-identity-regexp', `^https://github.com/docker/github-builder-experimental/.github/workflows/build.yml.*$`,
-                  '--certificate-oidc-issuer', 'https://token.actions.githubusercontent.com',
-                  '--new-bundle-format',
-                  '--bundle', `${afn}.sigstore.json`,
-                  attestation
-                ], {
-                  ignoreReturnCode: true
-                });
-                if (res.stderr.length > 0 && res.exitCode != 0) {
-                  throw new Error(res.stderr);
-                }
+              const res = await exec.getExecOutput('cosign', [
+                '-d', 'verify-blob-attestation',
+                '--certificate-identity-regexp', `^https://github.com/docker/github-builder-experimental/.github/workflows/build.yml.*$`,
+                '--certificate-oidc-issuer', 'https://token.actions.githubusercontent.com',
+                '--new-bundle-format',
+                '--bundle', `${baseDir}/provenance.sigstore.json`,
+                `${baseDir}/provenance.json`
+              ], {
+                ignoreReturnCode: true
+              });
+              if (res.stderr.length > 0 && res.exitCode != 0) {
+                throw new Error(res.stderr);
               }
               const artifactsGlobber = await glob.create(`${baseDir}/**/*`);
               const artifacts = await artifactsGlobber.glob();
-              const filteredArtifacts = allArtifacts.filter(p => fs.statSync(p).isFile() && !/provenance\.json$/.test(p) && !/sbom.*spdx\.json$/.test(p) && !/\.sigstore\.json$/.test(p));
+              const filteredArtifacts = artifacts.filter(p => fs.statSync(p).isFile() && !/provenance\.json$/.test(p) && !/sbom.*spdx\.json$/.test(p) && !/\.sigstore\.json$/.test(p));
               for (const artifact of filteredArtifacts) {
                 const res = await exec.getExecOutput('cosign', [
                   '-d', 'verify-blob-attestation',
                   '--certificate-identity-regexp', `^https://github.com/docker/github-builder-experimental/.github/workflows/build.yml.*$`,
                   '--certificate-oidc-issuer', 'https://token.actions.githubusercontent.com',
                   '--new-bundle-format',
-                  '--bundle', `provenance.sigstore.json`,
+                  '--bundle', `${baseDir}/provenance.sigstore.json`,
                   artifact
                 ], {
                   ignoreReturnCode: true
