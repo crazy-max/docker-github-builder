@@ -167,7 +167,8 @@ jobs:
             const { Install } = require('@docker/actions-toolkit/lib/cosign/install');
             
             const cosignInstall = new Install();
-            const cosignBinPath = await cosignInstall.build('https://github.com/crazy-max/cosign.git#3.0.2-fix-oci-manifest', false, true);
+            //const cosignBinPath = await cosignInstall.build('https://github.com/crazy-max/cosign.git#3.0.2-fix-oci-manifest', false, true);
+            const cosignBinPath = await cosignInstall.download('v3.0.2', false, true);
             await cosignInstall.install(cosignBinPath);
             
             const cosign = new Cosign();
