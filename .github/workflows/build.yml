@@ -37,6 +37,10 @@ on:
         type: string
         description: "List of build-time variables"
         required: false
+      build-file:
+        type: string
+        description: "Path to the Dockerfile"
+        required: false
       build-output:
         type: string
         description: "Build output destination (one of cacheonly, registry, local)"
@@ -131,6 +135,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           build-args: ${{ inputs.build-args }}
+          file: ${{ inputs.build-file }}
           platforms: ${{ inputs.build-platforms }}
           outputs: ${{ steps.prepare.outputs.output }}
           provenance: mode=max,version=v1
