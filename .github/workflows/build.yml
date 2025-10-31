@@ -63,14 +63,15 @@ on:
         required: false
 
 env:
-  LOCAL_OUTPUT_DIR: /tmp/buildx-output
+  DOCKER_ACTIONS_TOOLKIT_MODULE: "github:crazy-max/docker-actions-toolkit#signing-manifest-test"
+  COSIGN_VERSION: "v3.0.2"
+  LOCAL_EXPORT_DIR: "/tmp/buildx-output"
 
 jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      packages: write # needed for pushing the images to GitHub Packages
       id-token: write # needed for signing the images with GitHub OIDC Token
     steps:
       -
@@ -78,12 +79,12 @@ jobs:
         id: prepare
         uses: actions/github-script@v7
         env:
-          INPUT_LOCAL-OUTPUT-DIR: ${{ env.LOCAL_OUTPUT_DIR }}
+          INPUT_LOCAL-EXPORT-DIR: ${{ env.LOCAL_EXPORT_DIR }}
           INPUT_META-IMAGE: ${{ inputs.meta-image }}
           INPUT_BUILD-OUTPUT: ${{ inputs.build-output }}
         with:
           script: |
-            const localOutputDir = core.getInput('local-output-dir');
+            const localExportDir = core.getInput('local-export-dir');
             const metaImage = core.getMultilineInput('meta-image');
             const buildOutput = core.getInput('build-output');
             
@@ -100,19 +101,11 @@ jobs:
                 core.setOutput('output', `type=registry,"name=${metaImage[0]}",oci-artifact=true,push-by-digest=true,name-canonical=true`);
                 break;
               case 'local':
-                core.setOutput('output', `type=local,dest=${localOutputDir}`);
+                core.setOutput('output', `type=local,dest=${localExportDir}`);
                 break;
               default:
                 core.setFailed(`Invalid build-output: ${buildOutput}`);
             }
-      -
-        name: Install @docker/actions-toolkit
-        uses: actions/github-script@v8
-        with:
-          script: |
-            await exec.exec('npm', ['install', '--prefer-offline', '--no-audit',
-              'github:crazy-max/docker-actions-toolkit#signing-manifest'
-            ]);
       -
         name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -154,21 +147,25 @@ jobs:
         env:
           BUILDKIT_MULTI_PLATFORM: 1
       -
-        name: List output
-        if: ${{ inputs.build-output == 'local' }}
-        run: |
-          tree -nh ${{ env.LOCAL_OUTPUT_DIR }}
+        name: Install @docker/actions-toolkit
+        uses: actions/github-script@v8
+        env:
+          INPUT_DAT-MODULE: ${{ env.DOCKER_ACTIONS_TOOLKIT_MODULE }}
+        with:
+          script: |
+            await exec.exec('npm', ['install', '--prefer-offline', '--no-audit', core.getInput('dat-module')]);
       -
         name: Install Cosign
         uses: actions/github-script@v8
+        env:
+          INPUT_COSIGN-VERSION: ${{ env.COSIGN_VERSION }}
         with:
           script: |
             const { Cosign } = require('@docker/actions-toolkit/lib/cosign/cosign');
             const { Install } = require('@docker/actions-toolkit/lib/cosign/install');
             
             const cosignInstall = new Install();
-            //const cosignBinPath = await cosignInstall.build('https://github.com/crazy-max/cosign.git#3.0.2-fix-oci-manifest', false, true);
-            const cosignBinPath = await cosignInstall.download('v3.0.2', false, true);
+            const cosignBinPath = await cosignInstall.download(core.getInput('cosign-version'), false, true);
             await cosignInstall.install(cosignBinPath);
             
             const cosign = new Cosign();
@@ -202,16 +199,16 @@ jobs:
         if: ${{ inputs.build-output == 'local' }}
         uses: actions/github-script@v8
         env:
-          INPUT_LOCAL-OUTPUT-DIR: ${{ env.LOCAL_OUTPUT_DIR }}
+          INPUT_LOCAL-OUTPUT-DIR: ${{ env.LOCAL_EXPORT_DIR }}
         with:
           script: |
             const path = require('path');
             const { Sigstore } = require('@docker/actions-toolkit/lib/sigstore/sigstore');
-            const inpLocalOutputDir = core.getInput('local-output-dir');
+            const inplocalExportDir = core.getInput('local-output-dir');
             
             const sigstore = new Sigstore();
             const signResults = await sigstore.signProvenanceBlobs({
-              localExportDir: inpLocalOutputDir
+              localExportDir: inplocalExportDir
             });
             
             const verifyResults = await sigstore.verifySignedArtifacts(
@@ -240,15 +237,15 @@ jobs:
               }
             });
       -
-        name: List output
+        name: List local output
         if: ${{ inputs.build-output == 'local' }}
         run: |
-          tree -nh ${{ env.LOCAL_OUTPUT_DIR }}
+          tree -nh ${{ env.LOCAL_EXPORT_DIR }}
       -
         name: Upload artifact
         if: ${{ inputs.build-output == 'local' }}
         uses: actions/upload-artifact@v4
         with:
           name: docker-github-builder-output
-          path: ${{ env.LOCAL_OUTPUT_DIR }}
+          path: ${{ env.LOCAL_EXPORT_DIR }}
           if-no-files-found: error
