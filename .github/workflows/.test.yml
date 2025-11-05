@@ -27,7 +27,7 @@ jobs:
       meta-images: |
         public.ecr.aws/q3b5f1u4/test-docker-action
       meta-tags: |
-        type=raw,value=ghbuilder-${{ github.run_id }}
+        type=raw,value=ghbuilder-single-${{ github.run_id }}
       build-file: test/hello.Dockerfile
       build-output: ${{ github.event_name != 'pull_request' && 'registry' || 'cacheonly' }}
       build-sbom: true
@@ -98,6 +98,25 @@ jobs:
           username: ${{ vars.DOCKERHUB_STAGE_USERNAME }}
           password: ${{ secrets.DOCKERHUB_STAGE_TOKEN }}
 
+  build-dockerhub-stage-oidc:
+    uses: ./.github/workflows/build.yml
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+    with:
+      meta-images: registry-1-stage.docker.io/docker/github-builder-test
+      meta-tags: |
+        type=raw,value=${{ github.run_id }},prefix=oidc-
+      build-file: test/hello.Dockerfile
+      build-output: ${{ github.event_name != 'pull_request' && 'registry' || 'cacheonly' }}
+      build-sbom: true
+      build-platforms: linux/amd64,linux/arm64
+    secrets:
+      registry-auths: |
+        - registry: registry-1-stage.docker.io
+          username: docker:cdeb5882-30b7-4076-be92-bfdceb258e9c
+
   build-ghcr-and-aws:
     uses: ./.github/workflows/build.yml
     permissions:
@@ -109,7 +128,7 @@ jobs:
         ghcr.io/docker/github-builder-test
         public.ecr.aws/q3b5f1u4/test-docker-action
       meta-tags: |
-        type=raw,value=${{ github.run_id }}
+        type=raw,value=${{ github.run_id }},prefix=ghcr-and-aws-
       build-file: test/hello.Dockerfile
       build-output: ${{ github.event_name != 'pull_request' && 'registry' || 'cacheonly' }}
       build-sbom: true
