@@ -139,6 +139,8 @@ env:
 jobs:
   prepare:
     runs-on: ${{ inputs.runs-on || 'ubuntu-latest' }}
+    permissions:
+      contents: read
     outputs:
       includes: ${{ steps.set.outputs.includes }}
     steps:
@@ -256,8 +258,8 @@ jobs:
       - prepare
     permissions:
       contents: read
-      id-token: write # needed for signing the images with GitHub OIDC Token
-      packages: write # needed to push images to GitHub Container Registry
+      id-token: write # for signing attestation manifests with GitHub OIDC Token
+      packages: write # only used if pushing to GHCR but needs to be defined as caller must provide permissions ≥ to those used in the reusable workflow
     strategy:
       fail-fast: false
       matrix:
@@ -626,6 +628,9 @@ jobs:
 
   post:
     runs-on: ${{ inputs.runs-on || 'ubuntu-latest' }}
+    permissions:
+      contents: read
+      packages: write # only used if pushing to GHCR but needs to be defined as caller must provide permissions ≥ to those used in the reusable workflow
     outputs:
       cosign-version: ${{ env.COSIGN_VERSION }}
       cosign-verify-commands: ${{ steps.set.outputs.cosign-verify-commands }}
