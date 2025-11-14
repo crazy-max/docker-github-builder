@@ -122,13 +122,13 @@ on:
     outputs:
       cosign-version:
         description: Cosign version used for verification
-        value: ${{ jobs.post.outputs.cosign-version }}
+        value: ${{ jobs.finalize.outputs.cosign-version }}
       cosign-verify-commands:
         description: Cosign verify commands
-        value: ${{ jobs.post.outputs.cosign-verify-commands }}
+        value: ${{ jobs.finalize.outputs.cosign-verify-commands }}
       artifact-name:
         description: Name of the uploaded artifact (for local output)
-        value: ${{ jobs.post.outputs.artifact-name }}
+        value: ${{ jobs.finalize.outputs.artifact-name }}
 
 env:
   DOCKER_ACTIONS_TOOLKIT_MODULE: "@docker/actions-toolkit@0.67.0"
@@ -626,7 +626,7 @@ jobs:
             
             core.setOutput(`result_${inpIndex}`, JSON.stringify(result));
 
-  post:
+  finalize:
     runs-on: ${{ inputs.runs-on || 'ubuntu-latest' }}
     permissions:
       contents: read
