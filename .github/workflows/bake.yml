@@ -261,8 +261,8 @@ jobs:
       - prepare
     permissions:
       contents: read
-      id-token: write # for signing attestation manifests with GitHub OIDC Token
-      packages: write # only used if pushing to GHCR but needs to be defined as caller must provide permissions ≥ to those used in the reusable workflow
+      id-token: write # for signing attestation manifests and/or registry authentication with GitHub OIDC Token
+      packages: write # for pushing manifests to GHCR if needed
     strategy:
       fail-fast: false
       matrix:
@@ -633,7 +633,8 @@ jobs:
     runs-on: ${{ inputs.runs-on || 'ubuntu-latest' }}
     permissions:
       contents: read
-      packages: write # only used if pushing to GHCR but needs to be defined as caller must provide permissions ≥ to those used in the reusable workflow
+      id-token: write # for registry authentication with OIDC if needed
+      packages: write # for pushing to GHCR when merging manifests if needed
     outputs:
       cosign-version: ${{ env.COSIGN_VERSION }}
       cosign-verify-commands: ${{ steps.set.outputs.cosign-verify-commands }}
