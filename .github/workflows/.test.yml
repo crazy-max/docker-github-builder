@@ -4,9 +4,6 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-permissions:
-  contents: read
-
 on:
   workflow_dispatch:
   push:
@@ -22,7 +19,6 @@ jobs:
     uses: ./.github/workflows/build.yml
     permissions:
       contents: read
-      packages: write
       id-token: write
     with:
       output: image
@@ -57,7 +53,6 @@ jobs:
     uses: ./.github/workflows/build.yml
     permissions:
       contents: read
-      packages: write
       id-token: write
     with:
       output: image
@@ -94,8 +89,8 @@ jobs:
     uses: ./.github/workflows/build.yml
     permissions:
       contents: read
-      packages: write
       id-token: write
+      packages: write
     with:
       output: image
       push: ${{ github.event_name != 'pull_request' }}
@@ -128,7 +123,6 @@ jobs:
     uses: ./.github/workflows/build.yml
     permissions:
       contents: read
-      packages: write
       id-token: write
     with:
       output: image
@@ -162,7 +156,6 @@ jobs:
     uses: ./.github/workflows/build.yml
     permissions:
       contents: read
-      packages: write
       id-token: write
     with:
       output: image
@@ -197,8 +190,8 @@ jobs:
     uses: ./.github/workflows/build.yml
     permissions:
       contents: read
-      packages: write
       id-token: write
+      packages: write
     with:
       output: image
       push: ${{ github.event_name != 'pull_request' }}
@@ -239,7 +232,6 @@ jobs:
     uses: ./.github/workflows/build.yml
     permissions:
       contents: read
-      packages: write
       id-token: write
     with:
       output: local
@@ -261,7 +253,6 @@ jobs:
     uses: ./.github/workflows/build.yml
     permissions:
       contents: read
-      packages: write
       id-token: write
     with:
       output: local
@@ -282,7 +273,6 @@ jobs:
     uses: ./.github/workflows/build.yml
     permissions:
       contents: read
-      packages: write
       id-token: write
     with:
       runner: amd64
@@ -298,7 +288,6 @@ jobs:
     uses: ./.github/workflows/bake.yml
     permissions:
       contents: read
-      packages: write
       id-token: write
     with:
       context: test
@@ -335,7 +324,6 @@ jobs:
     uses: ./.github/workflows/bake.yml
     permissions:
       contents: read
-      packages: write
       id-token: write
     with:
       context: test
@@ -372,8 +360,8 @@ jobs:
     uses: ./.github/workflows/bake.yml
     permissions:
       contents: read
-      packages: write
       id-token: write
+      packages: write
     with:
       context: test
       target: hello-cross
@@ -416,7 +404,6 @@ jobs:
     uses: ./.github/workflows/bake.yml
     permissions:
       contents: read
-      packages: write
       id-token: write
     with:
       context: test
@@ -439,7 +426,6 @@ jobs:
     uses: ./.github/workflows/bake.yml
     permissions:
       contents: read
-      packages: write
       id-token: write
     with:
       context: test
@@ -462,7 +448,6 @@ jobs:
     uses: ./.github/workflows/bake.yml
     permissions:
       contents: read
-      packages: write
       id-token: write
     with:
       runner: amd64
