@@ -149,8 +149,6 @@ env:
 jobs:
   prepare:
     runs-on: ubuntu-24.04
-    permissions:
-      contents: read
     outputs:
       includes: ${{ steps.set.outputs.includes }}
     steps:
@@ -273,10 +271,6 @@ jobs:
     runs-on: ${{ matrix.runner }}
     needs:
       - prepare
-    permissions:
-      contents: read
-      id-token: write # for signing attestation manifests and/or registry authentication with GitHub OIDC Token
-      packages: write # for pushing manifests to GHCR if needed
     strategy:
       fail-fast: false
       matrix:
@@ -657,10 +651,6 @@ jobs:
 
   finalize:
     runs-on: ubuntu-24.04
-    permissions:
-      contents: read
-      id-token: write # for registry authentication with OIDC if needed
-      packages: write # for pushing to GHCR when merging manifests if needed
     outputs:
       cosign-version: ${{ env.COSIGN_VERSION }}
       cosign-verify-commands: ${{ steps.set.outputs.cosign-verify-commands }}
