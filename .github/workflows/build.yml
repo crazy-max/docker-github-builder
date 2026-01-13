@@ -176,6 +176,57 @@ jobs:
           script: |
             await exec.exec('npm', ['install', '--prefer-offline', '--ignore-scripts', core.getInput('dat-module')]);
       -
+        name: Install Cosign
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+        env:
+          INPUT_COSIGN-VERSION: ${{ env.COSIGN_VERSION }}
+        with:
+          script: |
+            const { Cosign } = require('@docker/actions-toolkit/lib/cosign/cosign');
+            const { Install } = require('@docker/actions-toolkit/lib/cosign/install');
+
+            const inpCosignVersion = core.getInput('cosign-version');
+
+            const cosignInstall = new Install();
+            const cosignBinPath = await cosignInstall.download({
+              version: core.getInput('cosign-version'),
+              ghaNoCache: true,
+              skipState: true,
+              verifySignature: true
+            });
+            const cosignPath = await cosignInstall.install(cosignBinPath);
+
+            const cosign = new Cosign();
+            await cosign.printVersion();
+      -
+        name: Check dependencies signatures
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+        env:
+          INPUT_IMAGES: |
+            ${{ env.BUILDKIT_IMAGE }}
+            ${{ env.SBOM_IMAGE }}
+            ${{ env.BINFMT_IMAGE }}
+        with:
+          script: |
+            const { OCI } = require('@docker/actions-toolkit/lib/oci/oci');
+            const { Sigstore } = require('@docker/actions-toolkit/lib/sigstore/sigstore');
+
+            const sigstore = new Sigstore();
+            
+            for (const image of core.getMultilineInput('images')) {
+              await core.group(`Verifying ${image}`, async () => {
+                try {
+                  await sigstore.verifyImageAttestations(image, {
+                    certificateIdentityRegexp: `^https://github.com/docker/github-builder(-experimental)?/.github/workflows/bake.yml.*$`,
+                    platform: OCI.defaultPlatform()
+                  });
+                } catch (error) {
+                  core.setFailed(error);
+                  return;
+                }
+              });
+            }
+      -
         name: Expose GitHub Runtime
         uses: crazy-max/ghaction-github-runtime@3cb05d89e1f492524af3d41a1c98c83bc3025124 # v3.1.0
       -
