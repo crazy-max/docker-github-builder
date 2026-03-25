@@ -21,45 +21,13 @@ env:
 
 jobs:
   zizmor:
-    runs-on: ubuntu-24.04
+    uses: crazy-max/.github/.github/workflows/zizmor.yml@20ef82212dc54bab5749f5e05576ca6d3c8a5773 # v1.1.0
     permissions:
       contents: read
       security-events: write
-    env:
-      TMPDIR: /tmp/zizmor
-    steps:
-      -
-        name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-        with:
-          persist-credentials: false
-      -
-        name: Setup uv
-        uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7.6.0
-        with:
-          enable-cache: false
-      -
-        name: Install zizmor
-        run: |
-          set -ex
-          uv tool install zizmor@${ZIZMOR_VERSION}
-      -
-        name: Run zizmor
-        id: zizmor
-        run: |
-          mkdir -p ${TMPDIR}
-          set -ex
-          zizmor --min-severity=medium --min-confidence=medium --persona=pedantic --no-online-audits --format=sarif . > ${TMPDIR}/zizmor.sarif
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      -
-        name: Zizmor crash report
-        if: ${{ failure() && steps.zizmor.conclusion == 'failure' }}
-        run: |
-          cat ${TMPDIR}/report-*.toml
-      -
-        name: Upload SARIF report
-        uses: github/codeql-action/upload-sarif@b1bff81932f5cdfc8695c7752dcee935dcd061c8 # v4.33.0
-        with:
-          sarif_file: ${{ env.TMPDIR }}/zizmor.sarif
-          category: zizmor
+    with:
+      version: v1.22.0
+      min-severity: medium
+      min-confidence: medium
+      persona: pedantic
+      no-online-audits: true
