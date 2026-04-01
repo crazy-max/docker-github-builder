@@ -4,7 +4,13 @@ updates:
     directory: "/"
     schedule:
       interval: "daily"
+    cooldown:
+      default-days: 2
     open-pull-requests-limit: 10
+    groups:
+      crazy-max-dot-github:
+        patterns:
+          - "crazy-max/.github/*"
     labels:
       - "area/dependencies"
       - "bot"
