@@ -5,9 +5,12 @@ on:
     inputs:
       runner:
         type: string
-        description: "Ubuntu GitHub Hosted Runner to build on (one of auto, amd64, arm64). The auto runner selects the best-matching runner based on target platforms. You can set it to amd64 if your build doesn't require emulation (e.g. cross-compilation)"
+        description: "GitHub-hosted runner label or mapping to build on. Set a single label to use it for every platform, or provide newline-delimited default and platform-specific mappings such as default=ubuntu-24.04 and linux/arm64=ubuntu-24.04-arm"
         required: false
-        default: 'auto'
+        default: |
+          default=ubuntu-24.04
+          linux/arm=ubuntu-24.04-arm
+          linux/arm64=ubuntu-24.04-arm
       distribute:
         type: boolean
         description: "Whether to distribute the build across multiple runners (one platform per runner)"
@@ -263,7 +266,7 @@ jobs:
             const inpActionsIdTokenSet = core.getBooleanInput('actions-id-token-set');
             const inpMetaImages = core.getMultilineInput('meta-images');
             
-            const inpRunner = core.getInput('runner');
+            const inpRunner = core.getMultilineInput('runner');
             const inpDistribute = core.getBooleanInput('distribute');
             const inpArtifactUpload = core.getBooleanInput('artifact-upload');
             const inpPlatforms = Util.getInputList('platforms');
@@ -271,15 +274,84 @@ jobs:
             const inpPush = core.getBooleanInput('push');
             const inpSign = core.getInput('sign');
             
-            let runner = inpRunner;
-            if (inpRunner === 'amd64') {
-              runner = 'ubuntu-24.04';
-            } else if (inpRunner === 'arm64') {
-              runner = 'ubuntu-24.04-arm';
-            } else if (inpRunner !== 'auto') {
-              core.setFailed(`Invalid runner input: ${inpRunner}`);
+            const parseRunnerConfig = value => {
+              const lines = value.map(line => line.trim()).filter(line => line.length > 0);
+              if (lines.length === 0) {
+                throw new Error('runner input cannot be empty');
+              }
+              if (lines.length === 1 && !lines[0].includes('=')) {
+                return {
+                  defaultRunner: lines[0],
+                  rules: []
+                };
+              }
+              const rules = [];
+              let defaultRunner;
+              for (const line of lines) {
+                const idx = line.indexOf('=');
+                if (idx === -1) {
+                  throw new Error(`Invalid runner mapping: ${line}`);
+                }
+                const pattern = line.substring(0, idx).trim();
+                const runner = line.substring(idx + 1).trim();
+                if (!pattern) {
+                  throw new Error('Runner mapping pattern cannot be empty');
+                }
+                if (!runner) {
+                  throw new Error(`Runner mapping value cannot be empty for ${pattern}`);
+                }
+                if (pattern === 'default') {
+                  defaultRunner = runner;
+                  continue;
+                }
+                if (pattern.split('/').some(part => part.length === 0)) {
+                  throw new Error(`Runner mapping pattern is not a valid platform prefix: ${pattern}`);
+                }
+                rules.push({pattern, runner});
+              }
+              if (!defaultRunner) {
+                throw new Error('Runner mapping must define a default runner');
+              }
+              return {
+                defaultRunner,
+                rules
+              };
+            };
+            
+            const matchesPlatformPrefix = (pattern, platform) => {
+              const patternParts = pattern.split('/');
+              const platformParts = platform.split('/');
+              return patternParts.length <= platformParts.length &&
+                patternParts.every((part, index) => part === platformParts[index]);
+            };
+            
+            const resolveRunner = (runnerConfig, platform) => {
+              if (!platform) {
+                return runnerConfig.defaultRunner;
+              }
+              let match;
+              for (const rule of runnerConfig.rules) {
+                if (!matchesPlatformPrefix(rule.pattern, platform)) {
+                  continue;
+                }
+                const specificity = rule.pattern.split('/').length;
+                if (!match || specificity >= match.specificity) {
+                  match = {runner: rule.runner, specificity};
+                }
+              }
+              return match ? match.runner : runnerConfig.defaultRunner;
+            };
+            
+            let runnerConfig;
+            try {
+              runnerConfig = parseRunnerConfig(inpRunner);
+            } catch (error) {
+              core.setFailed(error.message);
               return;
             }
+            await core.group(`Set runner config`, async () => {
+              core.info(JSON.stringify(runnerConfig, null, 2));
+            });
             
             const sign =
               inpSign === 'auto'
@@ -318,14 +390,14 @@ jobs:
               if (!inpDistribute || inpPlatforms.length === 0) {
                 includes.push({
                   index: 0,
-                  runner: runner === 'auto' ? 'ubuntu-24.04' : runner
+                  runner: resolveRunner(runnerConfig)
                 });
               } else {
                 inpPlatforms.forEach((platform, index) => {
                   includes.push({
                     index: index,
                     platform: platform,
-                    runner: runner === 'auto' ? (platform.startsWith('linux/arm') ? 'ubuntu-24.04-arm' : 'ubuntu-24.04') : runner
+                    runner: resolveRunner(runnerConfig, platform)
                   });
                 });
               }
@@ -374,6 +446,17 @@ jobs:
       result_18: ${{ steps.result.outputs.result_18 }}
       result_19: ${{ steps.result.outputs.result_19 }}
     steps:
+      -
+        name: Require GitHub-hosted runner
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          INPUT_RUNNER-ENVIRONMENT: ${{ runner.environment }}
+        with:
+          script: |
+            const runnerEnvironment = core.getInput('runner-environment');
+            if (runnerEnvironment !== 'github-hosted') {
+              core.setFailed(`This workflow requires a GitHub-hosted runner, got: ${runnerEnvironment || 'unknown'}`);
+            }
       -
         name: Install dependencies
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0

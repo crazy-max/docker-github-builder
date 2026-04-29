@@ -93,6 +93,10 @@ jobs:
       output: image
       platforms: linux/amd64,linux/arm64
       push: ${{ github.event_name != 'pull_request' }}
+      runner: |
+        default=ubuntu-24.04
+        linux/arm=ubuntu-24.04-arm
+        linux/arm64=ubuntu-24.04-arm
       sbom: true
       meta-images: |
         public.ecr.aws/q3b5f1u4/test-docker-action
@@ -514,7 +518,7 @@ jobs:
       contents: read
       id-token: write
     with:
-      runner: amd64
+      runner: ubuntu-24.04
       build-args: |
         VERSION={{meta.version}}
       file: test/hello.Dockerfile
