@@ -8,15 +8,16 @@ ___
   * [Performance](#performance)
   * [Security](#security)
   * [Isolation & Reliability](#isolation--reliability)
-* [Usage](#usage)
-  * [Build reusable workflow](#build-reusable-workflow)
-    * [Inputs](#inputs)
-    * [Secrets](#secrets)
-    * [Outputs](#outputs)
-  * [Bake reusable workflow](#bake-reusable-workflow)
-    * [Inputs](#inputs-1)
-    * [Secrets](#secrets-1)
-    * [Outputs](#outputs-1)
+* [Build reusable workflow](#build-reusable-workflow)
+  * [Inputs](#inputs)
+  * [Secrets](#secrets)
+  * [Outputs](#outputs)
+* [Bake reusable workflow](#bake-reusable-workflow)
+  * [Inputs](#inputs-1)
+  * [Secrets](#secrets-1)
+  * [Outputs](#outputs-1)
+* [Notes](#notes)
+  * [Runner mapping](#runner-mapping)
 
 ## Overview
 
@@ -141,9 +142,7 @@ toward higher levels of security and trust.
   *source commit* and the *builder identity* before trusting or promoting an
   image, an essential part of supply-chain hardening.
 
-## Usage
-
-### Build reusable workflow
+## Build reusable workflow
 
 The [`build.yml` reusable workflow](.github/workflows/build.yml) lets you build
 container images and artifacts from a Dockerfile with a user experience similar
@@ -187,25 +186,9 @@ jobs:
         - registry: docker.io
           username: ${{ vars.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-  # Optional job to verify the pushed images' signatures. This is already done
-  # in the `build` job and can be omitted. It's provided here as an example of
-  # how to use the `verify.yml` reusable workflow.
-  build-verify:
-    uses: docker/github-builder/.github/workflows/verify.yml@v1
-    if: ${{ github.event_name != 'pull_request' }}
-    needs:
-      - build
-    with:
-      builder-outputs: ${{ toJSON(needs.build.outputs) }}
-    secrets:
-      registry-auths: |
-        - registry: docker.io
-          username: ${{ vars.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
 ```
 
-#### Inputs
+### Inputs
 
 > [!NOTE]
 > `List` type is a newline-delimited string
@@ -220,35 +203,35 @@ jobs:
 > tags: name/app:latest,name/app:1.0.0
 > ```
 
-| Name                   | Type     | Default                        | Description                                                                                                                                                                                                                                                                                                                           |
-|------------------------|----------|--------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `runner`               | String   | `default=ubuntu-24.04` + `linux/arm=ubuntu-24.04-arm` + `linux/arm64=ubuntu-24.04-arm` | GitHub-hosted runner label or newline-delimited mapping to build on. Set a single label such as `ubuntu-24.04` to use it for every platform, or provide mappings such as `default=ubuntu-24.04`, `linux/arm=ubuntu-24.04-arm`, and `linux/arm64=ubuntu-24.04-arm` to target alternative GitHub-hosted runner labels by platform prefix while keeping the GitHub-hosted contract. The most specific matching platform prefix wins. Legacy values `auto`, `amd64`, and `arm64` still work but are deprecated. |
-| `distribute`           | Bool     | `true`                         | Whether to distribute the build across multiple runners (one platform per runner)                                                                                                                                                                                                                                                     |
-| `fail-fast`            | Bool     | `false`                        | Whether to cancel all in-progress and queued jobs in the matrix if any job fails                                                                                                                                                                                                                                                      |
-| `setup-qemu`           | Bool     | `false`                        | Runs the `setup-qemu-action` step to install QEMU static binaries                                                                                                                                                                                                                                                                     |
-| `artifact-name`        | String   | `docker-github-builder-assets` | Name of the uploaded GitHub artifact (for `local` output)                                                                                                                                                                                                                                                                             |
-| `artifact-upload`      | Bool     | `false`                        | Upload build output GitHub artifact (for `local` output)                                                                                                                                                                                                                                                                              |
-| `annotations`          | List     |                                | List of annotations to set to the image (for `image` output)                                                                                                                                                                                                                                                                          |
-| `build-args`           | List     | `auto`                         | List of [build-time variables](https://docs.docker.com/engine/reference/commandline/buildx_build/#build-arg). If you want to set a build-arg through an environment variable, use the `envs` input                                                                                                                                    |
-| `cache`                | Bool     | `false`                        | Enable [GitHub Actions cache](https://docs.docker.com/build/cache/backends/gha/) exporter                                                                                                                                                                                                                                             |
-| `cache-scope`          | String   | target name or `buildkit`      | Which [scope cache object belongs to](https://docs.docker.com/build/cache/backends/gha/#scope) if `cache` is enabled. This is the cache blob prefix name used when pushing cache to GitHub Actions cache backend                                                                                                                      |
-| `cache-mode`           | String   | `min`                          | [Cache layers to export](https://docs.docker.com/build/cache/backends/#cache-mode) if cache enabled (`min` or `max`). In `min` cache mode, only layers that are exported into the resulting image are cached, while in `max` cache mode, all layers are cached, even those of intermediate steps                                      |
-| `context`              | String   | `.`                            | Context to build from in the Git working tree                                                                                                                                                                                                                                                                                         |
-| `file`                 | String   | `{context}/Dockerfile`         | Path to the Dockerfile                                                                                                                                                                                                                                                                                                                |
-| `labels`               | List     |                                | List of labels for an image (for `image` output)                                                                                                                                                                                                                                                                                      |
-| `output`               | String   |                                | Build output destination (one of [`image`](https://docs.docker.com/build/exporters/image-registry/) or [`local`](https://docs.docker.com/build/exporters/local-tar/)). Unlike the `build-push-action`, it only accepts `image` or `local`. The reusable workflow takes care of setting the `outputs` attribute                        |
-| `platforms`            | List/CSV |                                | List of [target platforms](https://docs.docker.com/engine/reference/commandline/buildx_build/#platform) to build                                                                                                                                                                                                                      |
-| `push`                 | Bool     | `false`                        | [Push](https://docs.docker.com/engine/reference/commandline/buildx_build/#push) image to the registry (for `image` output)                                                                                                                                                                                                            |
-| `sbom`                 | Bool     | `false`                        | Generate [SBOM](https://docs.docker.com/build/attestations/sbom/) attestation for the build                                                                                                                                                                                                                                           |
-| `shm-size`             | String   |                                | Size of [`/dev/shm`](https://docs.docker.com/engine/reference/commandline/buildx_build/#shm-size) (e.g., `2g`)                                                                                                                                                                                                                        |
-| `sign`                 | String   | `auto`                         | Sign attestation manifest for `image` output or artifacts for `local` output, can be one of `auto`, `true` or `false`. The `auto` mode will enable signing if `push` is enabled for pushing the `image` or if `artifact-upload` is enabled for uploading the `local` build output as GitHub Artifact                                  |
-| `target`               | String   |                                | Sets the target stage to build                                                                                                                                                                                                                                                                                                        |
-| `ulimit`               | List     |                                | [Ulimit](https://docs.docker.com/engine/reference/commandline/buildx_build/#ulimit) options (e.g., `nofile=1024:1024`)                                                                                                                                                                                                                |
-| `set-meta-annotations` | Bool     | `false`                        | Append OCI Image Format Specification annotations generated by `docker/metadata-action`                                                                                                                                                                                                                                               |
-| `set-meta-labels`      | Bool     | `false`                        | Append OCI Image Format Specification labels generated by `docker/metadata-action`                                                                                                                                                                                                                                                    |
-| `meta-images`          | List     |                                | [List of images](https://github.com/docker/metadata-action?tab=readme-ov-file#images-input) to use as base name for tags (required for image output)                                                                                                                                                                                  |
-| `meta-tags`            | List     |                                | [List of tags](https://github.com/docker/metadata-action?tab=readme-ov-file#tags-input) as key-value pair attributes                                                                                                                                                                                                                  |
-| `meta-flavor`          | List     |                                | [Flavor](https://github.com/docker/metadata-action?tab=readme-ov-file#flavor-input) defines a global behavior for `meta-tags`                                                                                                                                                                                                         |
+| Name                   | Type     | Default                               | Description                                                                                                                                                                                                                                                                                                    |
+|------------------------|----------|---------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `runner`               | String   | See [Runner mapping](#runner-mapping) | GitHub-hosted runner label or platform mapping to build on. See [Runner mapping](#runner-mapping).                                                                                                                                                                                                             |
+| `distribute`           | Bool     | `true`                                | Whether to distribute the build across multiple runners (one platform per runner)                                                                                                                                                                                                                              |
+| `fail-fast`            | Bool     | `false`                               | Whether to cancel all in-progress and queued jobs in the matrix if any job fails                                                                                                                                                                                                                               |
+| `setup-qemu`           | Bool     | `false`                               | Runs the `setup-qemu-action` step to install QEMU static binaries                                                                                                                                                                                                                                              |
+| `artifact-name`        | String   | `docker-github-builder-assets`        | Name of the uploaded GitHub artifact (for `local` output)                                                                                                                                                                                                                                                      |
+| `artifact-upload`      | Bool     | `false`                               | Upload build output GitHub artifact (for `local` output)                                                                                                                                                                                                                                                       |
+| `annotations`          | List     |                                       | List of annotations to set to the image (for `image` output)                                                                                                                                                                                                                                                   |
+| `build-args`           | List     | `auto`                                | List of [build-time variables](https://docs.docker.com/engine/reference/commandline/buildx_build/#build-arg). If you want to set a build-arg through an environment variable, use the `envs` input                                                                                                             |
+| `cache`                | Bool     | `false`                               | Enable [GitHub Actions cache](https://docs.docker.com/build/cache/backends/gha/) exporter                                                                                                                                                                                                                      |
+| `cache-scope`          | String   | target name or `buildkit`             | Which [scope cache object belongs to](https://docs.docker.com/build/cache/backends/gha/#scope) if `cache` is enabled. This is the cache blob prefix name used when pushing cache to GitHub Actions cache backend                                                                                               |
+| `cache-mode`           | String   | `min`                                 | [Cache layers to export](https://docs.docker.com/build/cache/backends/#cache-mode) if cache enabled (`min` or `max`). In `min` cache mode, only layers that are exported into the resulting image are cached, while in `max` cache mode, all layers are cached, even those of intermediate steps               |
+| `context`              | String   | `.`                                   | Context to build from in the Git working tree                                                                                                                                                                                                                                                                  |
+| `file`                 | String   | `{context}/Dockerfile`                | Path to the Dockerfile                                                                                                                                                                                                                                                                                         |
+| `labels`               | List     |                                       | List of labels for an image (for `image` output)                                                                                                                                                                                                                                                               |
+| `output`               | String   |                                       | Build output destination (one of [`image`](https://docs.docker.com/build/exporters/image-registry/) or [`local`](https://docs.docker.com/build/exporters/local-tar/)). Unlike the `build-push-action`, it only accepts `image` or `local`. The reusable workflow takes care of setting the `outputs` attribute |
+| `platforms`            | List/CSV |                                       | List of [target platforms](https://docs.docker.com/engine/reference/commandline/buildx_build/#platform) to build                                                                                                                                                                                               |
+| `push`                 | Bool     | `false`                               | [Push](https://docs.docker.com/engine/reference/commandline/buildx_build/#push) image to the registry (for `image` output)                                                                                                                                                                                     |
+| `sbom`                 | Bool     | `false`                               | Generate [SBOM](https://docs.docker.com/build/attestations/sbom/) attestation for the build                                                                                                                                                                                                                    |
+| `shm-size`             | String   |                                       | Size of [`/dev/shm`](https://docs.docker.com/engine/reference/commandline/buildx_build/#shm-size) (e.g., `2g`)                                                                                                                                                                                                 |
+| `sign`                 | String   | `auto`                                | Sign attestation manifest for `image` output or artifacts for `local` output, can be one of `auto`, `true` or `false`. The `auto` mode will enable signing if `push` is enabled for pushing the `image` or if `artifact-upload` is enabled for uploading the `local` build output as GitHub Artifact           |
+| `target`               | String   |                                       | Sets the target stage to build                                                                                                                                                                                                                                                                                 |
+| `ulimit`               | List     |                                       | [Ulimit](https://docs.docker.com/engine/reference/commandline/buildx_build/#ulimit) options (e.g., `nofile=1024:1024`)                                                                                                                                                                                         |
+| `set-meta-annotations` | Bool     | `false`                               | Append OCI Image Format Specification annotations generated by `docker/metadata-action`                                                                                                                                                                                                                        |
+| `set-meta-labels`      | Bool     | `false`                               | Append OCI Image Format Specification labels generated by `docker/metadata-action`                                                                                                                                                                                                                             |
+| `meta-images`          | List     |                                       | [List of images](https://github.com/docker/metadata-action?tab=readme-ov-file#images-input) to use as base name for tags (required for image output)                                                                                                                                                           |
+| `meta-tags`            | List     |                                       | [List of tags](https://github.com/docker/metadata-action?tab=readme-ov-file#tags-input) as key-value pair attributes                                                                                                                                                                                           |
+| `meta-flavor`          | List     |                                       | [Flavor](https://github.com/docker/metadata-action?tab=readme-ov-file#flavor-input) defines a global behavior for `meta-tags`                                                                                                                                                                                  |
 
 > [!TIP]
 > When `output=image`, following inputs support Handlebars templates rendered
@@ -273,14 +256,14 @@ jobs:
 >       meta-images: name/app
 > ```
 
-#### Secrets
+### Secrets
 
 | Name             | Default               | Description                                                                    |
 |------------------|-----------------------|--------------------------------------------------------------------------------|
 | `registry-auths` |                       | Raw authentication to registries, defined as YAML objects (for `image` output) |
 | `github-token`   | `${{ github.token }}` | GitHub Token used to authenticate against the repository for Git context       |
 
-#### Outputs
+### Outputs
 
 These outputs are available as `needs.<job_id>.outputs.*` and can be passed
 directly to the [`verify.yml` reusable workflow](.github/workflows/verify.yml)
@@ -296,7 +279,7 @@ with `builder-outputs: ${{ toJSON(needs.<job_id>.outputs) }}`.
 | `output-type`            | String | Output type selected for the workflow (`image` or `local`)                   |
 | `signed`                 | Bool   | Whether attestation manifests or local artifacts were signed                 |
 
-### Bake reusable workflow
+## Bake reusable workflow
 
 The [`bake.yml` reusable workflow](.github/workflows/bake.yml) lets you build
 container images and artifacts from a [Bake definition](https://docs.docker.com/build/bake/)
@@ -339,26 +322,11 @@ jobs:
         - registry: docker.io
           username: ${{ vars.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-  # Optional job to verify the pushed images' signatures. This is already done
-  # in the `bake` job and can be omitted. It's provided here as an example of
-  # how to use the `verify.yml` reusable workflow.
-  bake-verify:
-    uses: docker/github-builder/.github/workflows/verify.yml@v1
-    if: ${{ github.event_name != 'pull_request' }}
-    needs:
-      - bake
-    with:
-      builder-outputs: ${{ toJSON(needs.bake.outputs) }}
-    secrets:
-      registry-auths: |
-        - registry: docker.io
-          username: ${{ vars.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
 ```
 
-#### Inputs
+### Inputs
 
+> [!NOTE]
 > `List` type is a newline-delimited string
 > ```yaml
 > set: target.args.mybuildarg=value
@@ -369,33 +337,33 @@ jobs:
 >   foo*.args.mybuildarg=value
 > ```
 
-| Name                   | Type   | Default                        | Description                                                                                                                                                                                                                                                                                                                           |
-|------------------------|--------|--------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `runner`               | String | `default=ubuntu-24.04` + `linux/arm=ubuntu-24.04-arm` + `linux/arm64=ubuntu-24.04-arm` | GitHub-hosted runner label or newline-delimited mapping to build on. Set a single label such as `ubuntu-24.04` to use it for every platform, or provide mappings such as `default=ubuntu-24.04`, `linux/arm=ubuntu-24.04-arm`, and `linux/arm64=ubuntu-24.04-arm` to target alternative GitHub-hosted runner labels by platform prefix while keeping the GitHub-hosted contract. The most specific matching platform prefix wins. Legacy values `auto`, `amd64`, and `arm64` still work but are deprecated. |
-| `distribute`           | Bool   | `true`                         | Whether to distribute the build across multiple runners (one platform per runner)                                                                                                                                                                                                                                                     |
-| `fail-fast`            | Bool   | `false`                        | Whether to cancel all in-progress and queued jobs in the matrix if any job fails                                                                                                                                                                                                                                                      |
-| `setup-qemu`           | Bool   | `false`                        | Runs the `setup-qemu-action` step to install QEMU static binaries                                                                                                                                                                                                                                                                     |
-| `artifact-name`        | String | `docker-github-builder-assets` | Name of the uploaded GitHub artifact (for `local` output)                                                                                                                                                                                                                                                                             |
-| `artifact-upload`      | Bool   | `false`                        | Upload build output GitHub artifact (for `local` output)                                                                                                                                                                                                                                                                              |
-| `cache`                | Bool   | `false`                        | Enable [GitHub Actions cache](https://docs.docker.com/build/cache/backends/gha/) exporter                                                                                                                                                                                                                                             |
-| `cache-scope`          | String | target name or `buildkit`      | Which [scope cache object belongs to](https://docs.docker.com/build/cache/backends/gha/#scope) if `cache` is enabled. This is the cache blob prefix name used when pushing cache to GitHub Actions cache backend                                                                                                                      |
-| `cache-mode`           | String | `min`                          | [Cache layers to export](https://docs.docker.com/build/cache/backends/#cache-mode) if cache enabled (`min` or `max`). In `min` cache mode, only layers that are exported into the resulting image are cached, while in `max` cache mode, all layers are cached, even those of intermediate steps                                      |
-| `context`              | String | `.`                            | Context to build from in the Git working tree                                                                                                                                                                                                                                                                                         |
-| `files`                | List   | `{context}/docker-bake.hcl`    | List of bake definition files                                                                                                                                                                                                                                                                                                         |
-| `output`               | String |                                | Build output destination (one of [`image`](https://docs.docker.com/build/exporters/image-registry/) or [`local`](https://docs.docker.com/build/exporters/local-tar/)).                                                                                                                                                                |
-| `push`                 | Bool   | `false`                        | Push image to the registry (for `image` output)                                                                                                                                                                                                                                                                                       |
-| `sbom`                 | Bool   | `false`                        | Generate [SBOM](https://docs.docker.com/build/attestations/sbom/) attestation for the build                                                                                                                                                                                                                                           |
-| `set`                  | List   |                                | List of [target values to override](https://docs.docker.com/engine/reference/commandline/buildx_bake/#set) (e.g., `targetpattern.key=value`)                                                                                                                                                                                          |
-| `sign`                 | String | `auto`                         | Sign attestation manifest for `image` output or artifacts for `local` output, can be one of `auto`, `true` or `false`. The `auto` mode will enable signing if `push` is enabled for pushing the `image` or if `artifact-upload` is enabled for uploading the `local` build output as GitHub Artifact                                  |
-| `target`               | String | `default`                      | Bake target to build                                                                                                                                                                                                                                                                                                                  |
-| `vars`                 | List   |                                | [Variables](https://docs.docker.com/build/bake/variables/) to set in the Bake definition as list of key-value pair                                                                                                                                                                                                                    |
-| `set-meta-annotations` | Bool   | `false`                        | Append OCI Image Format Specification annotations generated by `docker/metadata-action`                                                                                                                                                                                                                                               |
-| `set-meta-labels`      | Bool   | `false`                        | Append OCI Image Format Specification labels generated by `docker/metadata-action`                                                                                                                                                                                                                                                    |
-| `meta-images`          | List   |                                | [List of images](https://github.com/docker/metadata-action?tab=readme-ov-file#images-input) to use as base name for tags (required for image output)                                                                                                                                                                                  |
-| `meta-tags`            | List   |                                | [List of tags](https://github.com/docker/metadata-action?tab=readme-ov-file#tags-input) as key-value pair attributes                                                                                                                                                                                                                  |
-| `meta-labels`          | List   |                                | [List of custom labels](https://github.com/docker/metadata-action?tab=readme-ov-file#overwrite-labels-and-annotations)                                                                                                                                                                                                                |
-| `meta-annotations`     | List   |                                | [List of custom annotations](https://github.com/docker/metadata-action?tab=readme-ov-file#overwrite-labels-and-annotations)                                                                                                                                                                                                           |
-| `meta-flavor`          | List   |                                | [Flavor](https://github.com/docker/metadata-action?tab=readme-ov-file#flavor-input) defines a global behavior for `meta-tags`                                                                                                                                                                                                         |
+| Name                   | Type   | Default                               | Description                                                                                                                                                                                                                                                                                          |
+|------------------------|--------|---------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `runner`               | String | See [Runner mapping](#runner-mapping) | GitHub-hosted runner label or platform mapping to build on. See [Runner mapping](#runner-mapping).                                                                                                                                                                                                   |
+| `distribute`           | Bool   | `true`                                | Whether to distribute the build across multiple runners (one platform per runner)                                                                                                                                                                                                                    |
+| `fail-fast`            | Bool   | `false`                               | Whether to cancel all in-progress and queued jobs in the matrix if any job fails                                                                                                                                                                                                                     |
+| `setup-qemu`           | Bool   | `false`                               | Runs the `setup-qemu-action` step to install QEMU static binaries                                                                                                                                                                                                                                    |
+| `artifact-name`        | String | `docker-github-builder-assets`        | Name of the uploaded GitHub artifact (for `local` output)                                                                                                                                                                                                                                            |
+| `artifact-upload`      | Bool   | `false`                               | Upload build output GitHub artifact (for `local` output)                                                                                                                                                                                                                                             |
+| `cache`                | Bool   | `false`                               | Enable [GitHub Actions cache](https://docs.docker.com/build/cache/backends/gha/) exporter                                                                                                                                                                                                            |
+| `cache-scope`          | String | target name or `buildkit`             | Which [scope cache object belongs to](https://docs.docker.com/build/cache/backends/gha/#scope) if `cache` is enabled. This is the cache blob prefix name used when pushing cache to GitHub Actions cache backend                                                                                     |
+| `cache-mode`           | String | `min`                                 | [Cache layers to export](https://docs.docker.com/build/cache/backends/#cache-mode) if cache enabled (`min` or `max`). In `min` cache mode, only layers that are exported into the resulting image are cached, while in `max` cache mode, all layers are cached, even those of intermediate steps     |
+| `context`              | String | `.`                                   | Context to build from in the Git working tree                                                                                                                                                                                                                                                        |
+| `files`                | List   | `{context}/docker-bake.hcl`           | List of bake definition files                                                                                                                                                                                                                                                                        |
+| `output`               | String |                                       | Build output destination (one of [`image`](https://docs.docker.com/build/exporters/image-registry/) or [`local`](https://docs.docker.com/build/exporters/local-tar/)).                                                                                                                               |
+| `push`                 | Bool   | `false`                               | Push image to the registry (for `image` output)                                                                                                                                                                                                                                                      |
+| `sbom`                 | Bool   | `false`                               | Generate [SBOM](https://docs.docker.com/build/attestations/sbom/) attestation for the build                                                                                                                                                                                                          |
+| `set`                  | List   |                                       | List of [target values to override](https://docs.docker.com/engine/reference/commandline/buildx_bake/#set) (e.g., `targetpattern.key=value`)                                                                                                                                                         |
+| `sign`                 | String | `auto`                                | Sign attestation manifest for `image` output or artifacts for `local` output, can be one of `auto`, `true` or `false`. The `auto` mode will enable signing if `push` is enabled for pushing the `image` or if `artifact-upload` is enabled for uploading the `local` build output as GitHub Artifact |
+| `target`               | String | `default`                             | Bake target to build                                                                                                                                                                                                                                                                                 |
+| `vars`                 | List   |                                       | [Variables](https://docs.docker.com/build/bake/variables/) to set in the Bake definition as list of key-value pair                                                                                                                                                                                   |
+| `set-meta-annotations` | Bool   | `false`                               | Append OCI Image Format Specification annotations generated by `docker/metadata-action`                                                                                                                                                                                                              |
+| `set-meta-labels`      | Bool   | `false`                               | Append OCI Image Format Specification labels generated by `docker/metadata-action`                                                                                                                                                                                                                   |
+| `meta-images`          | List   |                                       | [List of images](https://github.com/docker/metadata-action?tab=readme-ov-file#images-input) to use as base name for tags (required for image output)                                                                                                                                                 |
+| `meta-tags`            | List   |                                       | [List of tags](https://github.com/docker/metadata-action?tab=readme-ov-file#tags-input) as key-value pair attributes                                                                                                                                                                                 |
+| `meta-labels`          | List   |                                       | [List of custom labels](https://github.com/docker/metadata-action?tab=readme-ov-file#overwrite-labels-and-annotations)                                                                                                                                                                               |
+| `meta-annotations`     | List   |                                       | [List of custom annotations](https://github.com/docker/metadata-action?tab=readme-ov-file#overwrite-labels-and-annotations)                                                                                                                                                                          |
+| `meta-flavor`          | List   |                                       | [Flavor](https://github.com/docker/metadata-action?tab=readme-ov-file#flavor-input) defines a global behavior for `meta-tags`                                                                                                                                                                        |
 
 > [!TIP]
 > When `output=image`, the `set` input supports Handlebars templates rendered
@@ -417,14 +385,14 @@ jobs:
 >       meta-images: name/app
 > ```
 
-#### Secrets
+### Secrets
 
 | Name             | Default               | Description                                                                    |
 |------------------|-----------------------|--------------------------------------------------------------------------------|
 | `registry-auths` |                       | Raw authentication to registries, defined as YAML objects (for `image` output) |
 | `github-token`   | `${{ github.token }}` | GitHub Token used to authenticate against the repository for Git context       |
 
-#### Outputs
+### Outputs
 
 These outputs are available as `needs.<job_id>.outputs.*` and can be passed
 directly to the [`verify.yml` reusable workflow](.github/workflows/verify.yml)
@@ -439,3 +407,36 @@ with `builder-outputs: ${{ toJSON(needs.<job_id>.outputs) }}`.
 | `digest`                 | String | Digest of the image pushed or artifact uploaded                              |
 | `output-type`            | String | Output type selected for the workflow (`image` or `local`)                   |
 | `signed`                 | Bool   | Whether attestation manifests or local artifacts were signed                 |
+
+## Notes
+
+### Runner mapping
+
+The `runner` input accepts either a single GitHub-hosted runner label or a
+newline-delimited platform mapping. A single label is used for every build:
+
+```yaml
+runner: ubuntu-24.04
+```
+
+The default value uses the standard GitHub-hosted Ubuntu runners:
+
+```yaml
+runner: |
+  default=ubuntu-24.04
+  linux/arm=ubuntu-24.04-arm
+  linux/arm64=ubuntu-24.04-arm
+```
+
+A mapping must define a `default` runner. Additional keys are platform prefixes,
+and the most specific matching prefix wins. For example:
+
+```yaml
+runner: |
+  default=ubuntu-24.04
+  linux=ubuntu-24.04
+  linux/arm=ubuntu-24.04-arm
+```
+
+For example, `linux` matches all Linux platforms, `linux/arm` matches variants
+such as `linux/arm/v7`, and `linux/arm64` is separate from `linux/arm`.

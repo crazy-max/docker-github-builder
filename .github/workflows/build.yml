@@ -5,7 +5,7 @@ on:
     inputs:
       runner:
         type: string
-        description: "GitHub-hosted runner label or mapping to build on. Set a single label to use it for every platform, or provide newline-delimited default and platform-specific mappings such as default=ubuntu-24.04 and linux/arm64=ubuntu-24.04-arm"
+        description: "GitHub-hosted runner label or platform mapping to build on"
         required: false
         default: |
           default=ubuntu-24.04
