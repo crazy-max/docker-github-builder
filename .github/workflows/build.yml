@@ -447,21 +447,33 @@ jobs:
             set -e
             
             # Create temporary files
-            out_file=$(mktemp)
-            in_file=$(mktemp)
-            trap 'rm -f "$in_file" "$out_file"' EXIT
+            tmp_dir=$(mktemp -d)
+            out_file="$tmp_dir/bundle"
+            in_file="$tmp_dir/blob"
+            signing_config="$tmp_dir/signing-config.json"
+            trap 'rm -rf "$tmp_dir"' EXIT
             cat > "$in_file"
             
+            no_default_rekor=
+            if [ "${{ needs.prepare.outputs.privateRepo }}" = "true" ]; then
+              no_default_rekor="--no-default-rekor=true"
+            fi
+
             set -x
             
+            # Create signing config
+            COSIGN_EXPERIMENTAL=1 cosign signing-config create \
+              --with-default-services=true \
+              ${no_default_rekor:+$no_default_rekor} \
+              --out="$signing_config"
+
             # Sign with cosign
             cosign sign-blob \
               --yes \
               --oidc-provider github-actions \
               --new-bundle-format \
-              --use-signing-config \
+              --signing-config "$signing_config" \
               --bundle "$out_file" \
-              --tlog-upload=${{ needs.prepare.outputs.privateRepo == 'false' }} \
               "$in_file"
             
             # Output bundle to stdout
