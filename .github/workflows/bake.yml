@@ -5,7 +5,7 @@ on:
     inputs:
       runner:
         type: string
-        description: "GitHub-hosted runner label or platform mapping to build on"
+        description: "GitHub-hosted Linux runner label or platform mapping to build on"
         required: false
         default: |
           default=ubuntu-24.04
@@ -579,15 +579,17 @@ jobs:
       result_19: ${{ steps.result.outputs.result_19 }}
     steps:
       -
-        name: Require GitHub-hosted runner
+        name: Require GitHub-hosted Linux runner
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
           INPUT_RUNNER-ENVIRONMENT: ${{ runner.environment }}
+          INPUT_RUNNER-OS: ${{ runner.os }}
         with:
           script: |
             const runnerEnvironment = core.getInput('runner-environment');
-            if (runnerEnvironment !== 'github-hosted') {
-              core.setFailed(`This workflow requires a GitHub-hosted runner, got: ${runnerEnvironment || 'unknown'}`);
+            const runnerOS = core.getInput('runner-os');
+            if (runnerEnvironment !== 'github-hosted' || runnerOS !== 'Linux') {
+              core.setFailed(`This workflow requires a GitHub-hosted Linux runner, got: environment=${runnerEnvironment || 'unknown'}, os=${runnerOS || 'unknown'}`);
             }
       -
         name: Install dependencies
