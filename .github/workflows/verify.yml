@@ -13,7 +13,7 @@ on:
         required: false
 
 env:
-  DOCKER_ACTIONS_TOOLKIT_MODULE: "@docker/actions-toolkit@0.90.0"
+  RUNTIME_MODULE: "@docker/github-builder-runtime@0.90.0"
 
 jobs:
   verify:
@@ -48,14 +48,14 @@ jobs:
             core.setOutput('output-type', outputType);
             core.setOutput('signed', signed);
       -
-        name: Install @docker/actions-toolkit
+        name: Install @docker/github-builder-runtime
         if: ${{ steps.vars.outputs.signed == 'true' }}
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
-          INPUT_DAT-MODULE: ${{ env.DOCKER_ACTIONS_TOOLKIT_MODULE }}
+          INPUT_RUNTIME-MODULE: ${{ env.RUNTIME_MODULE }}
         with:
           script: |
-            await exec.exec('npm', ['install', '--prefer-offline', '--ignore-scripts', core.getInput('dat-module')]);
+            await exec.exec('npm', ['install', '--loglevel=error', '--no-save', '--package-lock=false', '--ignore-scripts', '--omit=dev', '--prefer-offline', '--fund=false', '--audit=false', core.getInput('runtime-module')]);
       -
         name: Install Cosign
         if: ${{ steps.vars.outputs.signed == 'true' }}
@@ -64,8 +64,8 @@ jobs:
           INPUT_COSIGN-VERSION: ${{ steps.vars.outputs.cosign-version }}
         with:
           script: |
-            const { Cosign } = require('@docker/actions-toolkit/lib/cosign/cosign');
-            const { Install } = require('@docker/actions-toolkit/lib/cosign/install');
+            const { Cosign } = require('@docker/github-builder-runtime/lib/cosign/cosign');
+            const { Install } = require('@docker/github-builder-runtime/lib/cosign/install');
 
             const cosignInstall = new Install();
             const cosignBinPath = await cosignInstall.download({
