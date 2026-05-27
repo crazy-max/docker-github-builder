@@ -14,6 +14,16 @@ on:
 
 env:
   RUNTIME_MODULE: "@docker/github-builder-runtime@0.91.0"
+  RUNTIME_INSTALL_ARGS: |
+    --loglevel=error
+    --no-save
+    --package-lock=false
+    --ignore-scripts
+    --omit=dev
+    --prefer-offline
+    --fund=false
+    --audit=false
+  NPM_CONFIG_FETCH_RETRIES: "5"
 
 jobs:
   verify:
@@ -53,9 +63,24 @@ jobs:
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
           INPUT_RUNTIME-MODULE: ${{ env.RUNTIME_MODULE }}
+          INPUT_RUNTIME-INSTALL-ARGS: ${{ env.RUNTIME_INSTALL_ARGS }}
         with:
           script: |
-            await exec.exec('npm', ['install', '--loglevel=error', '--no-save', '--package-lock=false', '--ignore-scripts', '--omit=dev', '--prefer-offline', '--fund=false', '--audit=false', core.getInput('runtime-module')]);
+            const npmArgs = ['install', ...core.getMultilineInput('runtime-install-args'), core.getInput('runtime-module')];
+            const maxAttempts = 3;
+            for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+              const exitCode = await exec.exec('npm', npmArgs, {ignoreReturnCode: true});
+              if (exitCode === 0) {
+                return;
+              }
+              if (attempt === maxAttempts) {
+                core.setFailed(`npm install failed after ${maxAttempts} attempts`);
+                return;
+              }
+              const retryDelayMs = attempt * 50;
+              core.info(`npm install failed with exit code ${exitCode}; retrying in ${retryDelayMs}ms`);
+              await new Promise(resolve => setTimeout(resolve, retryDelayMs));
+            }
       -
         name: Install Cosign
         if: ${{ steps.vars.outputs.signed == 'true' }}

@@ -162,6 +162,15 @@ env:
   SBOM_IMAGE: "docker/buildkit-syft-scanner:1.11.0"
   BINFMT_IMAGE: "tonistiigi/binfmt:qemu-v10.2.1-65"
   RUNTIME_MODULE: "@docker/github-builder-runtime@0.91.0"
+  RUNTIME_INSTALL_ARGS: |
+    --loglevel=error
+    --no-save
+    --package-lock=false
+    --ignore-scripts
+    --omit=dev
+    --prefer-offline
+    --fund=false
+    --audit=false
   COSIGN_VERSION: "v3.0.6"
   LOCAL_EXPORT_DIR: "/tmp/buildx-output"
   MATRIX_SIZE_LIMIT: "20"
@@ -182,9 +191,24 @@ jobs:
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
           INPUT_RUNTIME-MODULE: ${{ env.RUNTIME_MODULE }}
+          INPUT_RUNTIME-INSTALL-ARGS: ${{ env.RUNTIME_INSTALL_ARGS }}
         with:
           script: |
-            await exec.exec('npm', ['install', '--loglevel=error', '--no-save', '--package-lock=false', '--ignore-scripts', '--omit=dev', '--prefer-offline', '--fund=false', '--audit=false', core.getInput('runtime-module')]);
+            const npmArgs = ['install', ...core.getMultilineInput('runtime-install-args'), core.getInput('runtime-module')];
+            const maxAttempts = 3;
+            for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+              const exitCode = await exec.exec('npm', npmArgs, {ignoreReturnCode: true});
+              if (exitCode === 0) {
+                return;
+              }
+              if (attempt === maxAttempts) {
+                core.setFailed(`npm install failed after ${maxAttempts} attempts`);
+                return;
+              }
+              const retryDelayMs = attempt * 50;
+              core.info(`npm install failed with exit code ${exitCode}; retrying in ${retryDelayMs}ms`);
+              await new Promise(resolve => setTimeout(resolve, retryDelayMs));
+            }
       -
         name: Install Cosign
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
@@ -593,9 +617,24 @@ jobs:
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
           INPUT_RUNTIME-MODULE: ${{ env.RUNTIME_MODULE }}
+          INPUT_RUNTIME-INSTALL-ARGS: ${{ env.RUNTIME_INSTALL_ARGS }}
         with:
           script: |
-            await exec.exec('npm', ['install', '--loglevel=error', '--no-save', '--package-lock=false', '--ignore-scripts', '--omit=dev', '--prefer-offline', '--fund=false', '--audit=false', core.getInput('runtime-module')]);
+            const npmArgs = ['install', ...core.getMultilineInput('runtime-install-args'), core.getInput('runtime-module')];
+            const maxAttempts = 3;
+            for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+              const exitCode = await exec.exec('npm', npmArgs, {ignoreReturnCode: true});
+              if (exitCode === 0) {
+                return;
+              }
+              if (attempt === maxAttempts) {
+                core.setFailed(`npm install failed after ${maxAttempts} attempts`);
+                return;
+              }
+              const retryDelayMs = attempt * 50;
+              core.info(`npm install failed with exit code ${exitCode}; retrying in ${retryDelayMs}ms`);
+              await new Promise(resolve => setTimeout(resolve, retryDelayMs));
+            }
       -
         name: Docker meta
         id: meta
@@ -1082,9 +1121,24 @@ jobs:
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
           INPUT_RUNTIME-MODULE: ${{ env.RUNTIME_MODULE }}
+          INPUT_RUNTIME-INSTALL-ARGS: ${{ env.RUNTIME_INSTALL_ARGS }}
         with:
           script: |
-            await exec.exec('npm', ['install', '--loglevel=error', '--no-save', '--package-lock=false', '--ignore-scripts', '--omit=dev', '--prefer-offline', '--fund=false', '--audit=false', core.getInput('runtime-module')]);
+            const npmArgs = ['install', ...core.getMultilineInput('runtime-install-args'), core.getInput('runtime-module')];
+            const maxAttempts = 3;
+            for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+              const exitCode = await exec.exec('npm', npmArgs, {ignoreReturnCode: true});
+              if (exitCode === 0) {
+                return;
+              }
+              if (attempt === maxAttempts) {
+                core.setFailed(`npm install failed after ${maxAttempts} attempts`);
+                return;
+              }
+              const retryDelayMs = attempt * 50;
+              core.info(`npm install failed with exit code ${exitCode}; retrying in ${retryDelayMs}ms`);
+              await new Promise(resolve => setTimeout(resolve, retryDelayMs));
+            }
       -
         name: Docker meta
         id: meta
