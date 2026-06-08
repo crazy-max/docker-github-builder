@@ -209,7 +209,7 @@ jobs:
             const builderOutputs = JSON.parse(core.getInput('builder-outputs'));
             core.info(JSON.stringify(builderOutputs, null, 2));
 
-  bake-dockerhub-stage:
+  bake-dockerhub:
     uses: ./.github/workflows/bake.yml
     permissions:
       contents: read
@@ -223,38 +223,38 @@ jobs:
         *.args.VERSION={{meta.version}}
       target: hello-cross
       meta-images: |
-        registry-1-stage.docker.io/docker/github-builder-test
+        docker.io/dockereng/github-builder-test
       meta-tags: |
         type=raw,value=bake-ghbuilder-${{ github.run_id }}
     secrets:
       registry-auths: |
-        - registry: registry-1-stage.docker.io
-          username: ${{ vars.DOCKERHUB_STAGE_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_STAGE_TOKEN }}
+        - registry: docker.io
+          username: ${{ vars.DOCKERPUBLICBOT_USERNAME }}
+          password: ${{ secrets.DOCKERPUBLICBOT_WRITE_PAT }}
 
-  bake-dockerhub-stage-verify:
+  bake-dockerhub-verify:
     uses: ./.github/workflows/verify.yml
     if: ${{ github.event_name != 'pull_request' }}
     needs:
-      - bake-dockerhub-stage
+      - bake-dockerhub
     with:
-      builder-outputs: ${{ toJSON(needs.bake-dockerhub-stage.outputs) }}
+      builder-outputs: ${{ toJSON(needs.bake-dockerhub.outputs) }}
     secrets:
       registry-auths: |
-        - registry: registry-1-stage.docker.io
-          username: ${{ vars.DOCKERHUB_STAGE_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_STAGE_TOKEN }}
+        - registry: docker.io
+          username: ${{ vars.DOCKERPUBLICBOT_USERNAME }}
+          password: ${{ secrets.DOCKERPUBLICBOT_WRITE_PAT }}
 
-  bake-dockerhub-stage-outputs:
+  bake-dockerhub-outputs:
     runs-on: ubuntu-24.04
     needs:
-      - bake-dockerhub-stage
+      - bake-dockerhub
     steps:
       -
         name: Builder outputs
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
-          INPUT_BUILDER-OUTPUTS: ${{ toJSON(needs.bake-dockerhub-stage.outputs) }}
+          INPUT_BUILDER-OUTPUTS: ${{ toJSON(needs.bake-dockerhub.outputs) }}
         with:
           script: |
             const builderOutputs = JSON.parse(core.getInput('builder-outputs'));
@@ -572,6 +572,7 @@ jobs:
     permissions:
       contents: read
       id-token: write
+      packages: write
     with:
       context: test
       output: image
@@ -581,14 +582,14 @@ jobs:
         *.args.VERSION={{meta.version}}
       target: hello-cross
       meta-images: |
-        registry-1-stage.docker.io/docker/github-builder-test
+        ghcr.io/docker/github-builder-test
       meta-tags: |
         type=raw,value=bake-ghbuilder-scope-${{ github.run_id }}
     secrets:
       registry-auths: |
-        - registry: registry-1-stage.docker.io
-          username: ${{ vars.DOCKERHUB_STAGE_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_STAGE_TOKEN }}
+        - registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
           scope: '@push'
 
   bake-auth-scope-verify:
@@ -600,9 +601,9 @@ jobs:
       builder-outputs: ${{ toJSON(needs.bake-auth-scope.outputs) }}
     secrets:
       registry-auths: |
-        - registry: registry-1-stage.docker.io
-          username: ${{ vars.DOCKERHUB_STAGE_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_STAGE_TOKEN }}
+        - registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
   bake-namedcontexts:
     uses: ./.github/workflows/bake.yml

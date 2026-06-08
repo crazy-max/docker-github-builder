@@ -260,7 +260,7 @@ jobs:
             const builderOutputs = JSON.parse(core.getInput('builder-outputs'));
             core.info(JSON.stringify(builderOutputs, null, 2));
 
-  build-dockerhub-stage:
+  build-dockerhub:
     uses: ./.github/workflows/build.yml
     permissions:
       contents: read
@@ -273,38 +273,38 @@ jobs:
       platforms: linux/amd64,linux/arm64
       push: ${{ github.event_name != 'pull_request' }}
       sbom: true
-      meta-images: registry-1-stage.docker.io/docker/github-builder-test
+      meta-images: docker.io/dockereng/github-builder-test
       meta-tags: |
         type=raw,value=build-${{ github.run_id }}
     secrets:
       registry-auths: |
-        - registry: registry-1-stage.docker.io
-          username: ${{ vars.DOCKERHUB_STAGE_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_STAGE_TOKEN }}
+        - registry: docker.io
+          username: ${{ vars.DOCKERPUBLICBOT_USERNAME }}
+          password: ${{ secrets.DOCKERPUBLICBOT_WRITE_PAT }}
 
-  build-dockerhub-stage-verify:
+  build-dockerhub-verify:
     uses: ./.github/workflows/verify.yml
     if: ${{ github.event_name != 'pull_request' }}
     needs:
-      - build-dockerhub-stage
+      - build-dockerhub
     with:
-      builder-outputs: ${{ toJSON(needs.build-dockerhub-stage.outputs) }}
+      builder-outputs: ${{ toJSON(needs.build-dockerhub.outputs) }}
     secrets:
       registry-auths: |
-        - registry: registry-1-stage.docker.io
-          username: ${{ vars.DOCKERHUB_STAGE_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_STAGE_TOKEN }}
+        - registry: docker.io
+          username: ${{ vars.DOCKERPUBLICBOT_USERNAME }}
+          password: ${{ secrets.DOCKERPUBLICBOT_WRITE_PAT }}
 
-  build-dockerhub-stage-outputs:
+  build-dockerhub-outputs:
     runs-on: ubuntu-24.04
     needs:
-      - build-dockerhub-stage
+      - build-dockerhub
     steps:
       -
         name: Builder outputs
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
-          INPUT_BUILDER-OUTPUTS: ${{ toJSON(needs.build-dockerhub-stage.outputs) }}
+          INPUT_BUILDER-OUTPUTS: ${{ toJSON(needs.build-dockerhub.outputs) }}
         with:
           script: |
             const builderOutputs = JSON.parse(core.getInput('builder-outputs'));
@@ -605,6 +605,7 @@ jobs:
     permissions:
       contents: read
       id-token: write
+      packages: write
     with:
       build-args: |
         VERSION={{meta.version}}
@@ -613,14 +614,14 @@ jobs:
       platforms: linux/amd64,linux/arm64
       push: ${{ github.event_name != 'pull_request' }}
       sbom: true
-      meta-images: registry-1-stage.docker.io/docker/github-builder-test
+      meta-images: ghcr.io/docker/github-builder-test
       meta-tags: |
         type=raw,value=build-scope-${{ github.run_id }}
     secrets:
       registry-auths: |
-        - registry: registry-1-stage.docker.io
-          username: ${{ vars.DOCKERHUB_STAGE_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_STAGE_TOKEN }}
+        - registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
           scope: '@push'
 
   build-auth-scope-verify:
@@ -632,9 +633,9 @@ jobs:
       builder-outputs: ${{ toJSON(needs.build-auth-scope.outputs) }}
     secrets:
       registry-auths: |
-        - registry: registry-1-stage.docker.io
-          username: ${{ vars.DOCKERHUB_STAGE_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_STAGE_TOKEN }}
+        - registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
   build-ghcr-index-annotations:
     uses: ./.github/workflows/build.yml
