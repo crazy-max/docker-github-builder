@@ -26,14 +26,14 @@ on:
       - 'test/**'
 
 jobs:
-  bake-aws-single:
+  bake-dockerhub-single:
     uses: ./.github/workflows/bake.yml
     permissions:
       contents: read
       id-token: write
     with:
       cache: true
-      cache-scope: bake-aws-single
+      cache-scope: bake-dockerhub-single
       context: test
       output: image
       push: ${{ github.event_name != 'pull_request' }}
@@ -42,168 +42,38 @@ jobs:
         *.args.VERSION={{meta.version}}
       target: hello
       meta-images: |
-        public.ecr.aws/q3b5f1u4/test-docker-action
+        docker.io/dockereng/github-builder-test
       meta-tags: |
         type=raw,value=bake-ghbuilder-single-${{ github.run_id }}
     secrets:
       registry-auths: |
-        - registry: public.ecr.aws
-          username: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          password: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        - registry: docker.io
+          username: ${{ vars.DOCKERPUBLICBOT_USERNAME }}
+          password: ${{ secrets.DOCKERPUBLICBOT_WRITE_PAT }}
 
-  bake-aws-single-verify:
+  bake-dockerhub-single-verify:
     uses: ./.github/workflows/verify.yml
     if: ${{ github.event_name != 'pull_request' }}
     needs:
-      - bake-aws-single
+      - bake-dockerhub-single
     with:
-      builder-outputs: ${{ toJSON(needs.bake-aws-single.outputs) }}
+      builder-outputs: ${{ toJSON(needs.bake-dockerhub-single.outputs) }}
     secrets:
       registry-auths: |
-        - registry: public.ecr.aws
-          username: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          password: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        - registry: docker.io
+          username: ${{ vars.DOCKERPUBLICBOT_USERNAME }}
+          password: ${{ secrets.DOCKERPUBLICBOT_WRITE_PAT }}
 
-  bake-aws-single-outputs:
+  bake-dockerhub-single-outputs:
     runs-on: ubuntu-24.04
     needs:
-      - bake-aws-single
+      - bake-dockerhub-single
     steps:
       -
         name: Builder outputs
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
-          INPUT_BUILDER-OUTPUTS: ${{ toJSON(needs.bake-aws-single.outputs) }}
-        with:
-          script: |
-            const builderOutputs = JSON.parse(core.getInput('builder-outputs'));
-            core.info(JSON.stringify(builderOutputs, null, 2));
-
-  bake-aws:
-    uses: ./.github/workflows/bake.yml
-    permissions:
-      contents: read
-      id-token: write
-    with:
-      cache: true
-      cache-scope: bake-aws
-      context: test
-      output: image
-      push: ${{ github.event_name != 'pull_request' }}
-      runner: |
-        default=ubuntu-24.04
-        linux/arm=ubuntu-24.04-arm
-        linux/arm64=ubuntu-24.04-arm
-      sbom: true
-      set: |
-        *.args.VERSION={{meta.version}}
-      target: hello-cross
-      meta-images: |
-        public.ecr.aws/q3b5f1u4/test-docker-action
-      meta-tags: |
-        type=raw,value=bake-ghbuilder-${{ github.run_id }}
-    secrets:
-      registry-auths: |
-        - registry: public.ecr.aws
-          username: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          password: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-
-  bake-aws-verify:
-    uses: ./.github/workflows/verify.yml
-    if: ${{ github.event_name != 'pull_request' }}
-    needs:
-      - bake-aws
-    with:
-      builder-outputs: ${{ toJSON(needs.bake-aws.outputs) }}
-    secrets:
-      registry-auths: |
-        - registry: public.ecr.aws
-          username: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          password: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-
-  bake-aws-outputs:
-    runs-on: ubuntu-24.04
-    needs:
-      - bake-aws
-    steps:
-      -
-        name: Builder outputs
-        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
-        env:
-          INPUT_BUILDER-OUTPUTS: ${{ toJSON(needs.bake-aws.outputs) }}
-        with:
-          script: |
-            const builderOutputs = JSON.parse(core.getInput('builder-outputs'));
-            core.info(JSON.stringify(builderOutputs, null, 2));
-
-  bake-aws-scan:
-    runs-on: ubuntu-24.04
-    if: ${{ github.event_name != 'pull_request' }}
-    needs:
-      - bake-aws
-    steps:
-      -
-        name: Login to registry
-        uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4.2.0
-        with:
-          registry: public.ecr.aws
-          username: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          password: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      -
-        name: Scan for vulnerabilities
-        uses: crazy-max/ghaction-container-scan@a0a3900b79d158c85ccf034e5368fae620a9233a # v4.0.0
-        with:
-          image: public.ecr.aws/q3b5f1u4/test-docker-action@${{ needs.bake-aws.outputs.digest }}
-
-  bake-aws-nosign:
-    uses: ./.github/workflows/bake.yml
-    permissions:
-      contents: read
-      id-token: write
-    with:
-      cache: true
-      cache-scope: bake-aws-nosign
-      context: test
-      output: image
-      push: ${{ github.event_name != 'pull_request' }}
-      sbom: true
-      set: |
-        *.args.VERSION={{meta.version}}
-      sign: false
-      target: hello-cross
-      meta-images: |
-        public.ecr.aws/q3b5f1u4/test-docker-action
-      meta-tags: |
-        type=raw,value=bake-ghbuilder-nosign-${{ github.run_id }}
-    secrets:
-      registry-auths: |
-        - registry: public.ecr.aws
-          username: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          password: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-
-  bake-aws-nosign-verify:
-    uses: ./.github/workflows/verify.yml
-    if: ${{ github.event_name != 'pull_request' }}
-    needs:
-      - bake-aws-nosign
-    with:
-      builder-outputs: ${{ toJSON(needs.bake-aws-nosign.outputs) }}
-    secrets:
-      registry-auths: |
-        - registry: public.ecr.aws
-          username: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          password: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-
-  bake-aws-nosign-outputs:
-    runs-on: ubuntu-24.04
-    needs:
-      - bake-aws-nosign
-    steps:
-      -
-        name: Builder outputs
-        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
-        env:
-          INPUT_BUILDER-OUTPUTS: ${{ toJSON(needs.bake-aws-nosign.outputs) }}
+          INPUT_BUILDER-OUTPUTS: ${{ toJSON(needs.bake-dockerhub-single.outputs) }}
         with:
           script: |
             const builderOutputs = JSON.parse(core.getInput('builder-outputs'));
@@ -215,9 +85,15 @@ jobs:
       contents: read
       id-token: write
     with:
+      cache: true
+      cache-scope: bake-dockerhub
       context: test
       output: image
       push: ${{ github.event_name != 'pull_request' }}
+      runner: |
+        default=ubuntu-24.04
+        linux/arm=ubuntu-24.04-arm
+        linux/arm64=ubuntu-24.04-arm
       sbom: true
       set: |
         *.args.VERSION={{meta.version}}
@@ -260,7 +136,73 @@ jobs:
             const builderOutputs = JSON.parse(core.getInput('builder-outputs'));
             core.info(JSON.stringify(builderOutputs, null, 2));
 
-  bake-ghcr-and-aws:
+  bake-dockerhub-scan:
+    runs-on: ubuntu-24.04
+    if: ${{ github.event_name != 'pull_request' }}
+    needs:
+      - bake-dockerhub
+    steps:
+      -
+        name: Scan for vulnerabilities
+        uses: crazy-max/ghaction-container-scan@a0a3900b79d158c85ccf034e5368fae620a9233a # v4.0.0
+        with:
+          image: docker.io/dockereng/github-builder-test@${{ needs.bake-dockerhub.outputs.digest }}
+
+  bake-dockerhub-nosign:
+    uses: ./.github/workflows/bake.yml
+    permissions:
+      contents: read
+      id-token: write
+    with:
+      cache: true
+      cache-scope: bake-dockerhub-nosign
+      context: test
+      output: image
+      push: ${{ github.event_name != 'pull_request' }}
+      sbom: true
+      set: |
+        *.args.VERSION={{meta.version}}
+      sign: false
+      target: hello-cross
+      meta-images: |
+        docker.io/dockereng/github-builder-test
+      meta-tags: |
+        type=raw,value=bake-ghbuilder-nosign-${{ github.run_id }}
+    secrets:
+      registry-auths: |
+        - registry: docker.io
+          username: ${{ vars.DOCKERPUBLICBOT_USERNAME }}
+          password: ${{ secrets.DOCKERPUBLICBOT_WRITE_PAT }}
+
+  bake-dockerhub-nosign-verify:
+    uses: ./.github/workflows/verify.yml
+    if: ${{ github.event_name != 'pull_request' }}
+    needs:
+      - bake-dockerhub-nosign
+    with:
+      builder-outputs: ${{ toJSON(needs.bake-dockerhub-nosign.outputs) }}
+    secrets:
+      registry-auths: |
+        - registry: docker.io
+          username: ${{ vars.DOCKERPUBLICBOT_USERNAME }}
+          password: ${{ secrets.DOCKERPUBLICBOT_WRITE_PAT }}
+
+  bake-dockerhub-nosign-outputs:
+    runs-on: ubuntu-24.04
+    needs:
+      - bake-dockerhub-nosign
+    steps:
+      -
+        name: Builder outputs
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          INPUT_BUILDER-OUTPUTS: ${{ toJSON(needs.bake-dockerhub-nosign.outputs) }}
+        with:
+          script: |
+            const builderOutputs = JSON.parse(core.getInput('builder-outputs'));
+            core.info(JSON.stringify(builderOutputs, null, 2));
+
+  bake-ghcr-and-dockerhub:
     uses: ./.github/workflows/bake.yml
     permissions:
       contents: read
@@ -276,44 +218,44 @@ jobs:
       target: hello-cross
       meta-images: |
         ghcr.io/docker/github-builder-test
-        public.ecr.aws/q3b5f1u4/test-docker-action
+        docker.io/dockereng/github-builder-test
       meta-tags: |
-        type=raw,value=${{ github.run_id }},prefix=bake-ghcr-and-aws-
+        type=raw,value=${{ github.run_id }},prefix=bake-ghcr-and-dockerhub-
     secrets:
       registry-auths: |
         - registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-        - registry: public.ecr.aws
-          username: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          password: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        - registry: docker.io
+          username: ${{ vars.DOCKERPUBLICBOT_USERNAME }}
+          password: ${{ secrets.DOCKERPUBLICBOT_WRITE_PAT }}
 
-  bake-ghcr-and-aws-verify:
+  bake-ghcr-and-dockerhub-verify:
     uses: ./.github/workflows/verify.yml
     if: ${{ github.event_name != 'pull_request' }}
     needs:
-      - bake-ghcr-and-aws
+      - bake-ghcr-and-dockerhub
     with:
-      builder-outputs: ${{ toJSON(needs.bake-ghcr-and-aws.outputs) }}
+      builder-outputs: ${{ toJSON(needs.bake-ghcr-and-dockerhub.outputs) }}
     secrets:
       registry-auths: |
         - registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-        - registry: public.ecr.aws
-          username: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          password: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        - registry: docker.io
+          username: ${{ vars.DOCKERPUBLICBOT_USERNAME }}
+          password: ${{ secrets.DOCKERPUBLICBOT_WRITE_PAT }}
 
-  bake-ghcr-and-aws-outputs:
+  bake-ghcr-and-dockerhub-outputs:
     runs-on: ubuntu-24.04
     needs:
-      - bake-ghcr-and-aws
+      - bake-ghcr-and-dockerhub
     steps:
       -
         name: Builder outputs
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
-          INPUT_BUILDER-OUTPUTS: ${{ toJSON(needs.bake-ghcr-and-aws.outputs) }}
+          INPUT_BUILDER-OUTPUTS: ${{ toJSON(needs.bake-ghcr-and-dockerhub.outputs) }}
         with:
           script: |
             const builderOutputs = JSON.parse(core.getInput('builder-outputs'));
@@ -477,7 +419,7 @@ jobs:
         *.args.VERSION={{meta.version}}
       target: hello-cross
       meta-images: |
-        public.ecr.aws/q3b5f1u4/test-docker-action
+        docker.io/dockereng/github-builder-test
       meta-tags: |
         type=raw,value=bake-ghbuilder-${{ github.run_id }}
 
@@ -495,7 +437,7 @@ jobs:
         *.args.VERSION={{meta.version}}
       target: hello-cross
       meta-images: |
-        public.ecr.aws/q3b5f1u4/test-docker-action
+        docker.io/dockereng/github-builder-test
       meta-tags: |
         type=raw,value=bake-ghbuilder-${{ github.run_id }}
 
@@ -512,7 +454,7 @@ jobs:
       sbom: true
       target: hello-cross
 
-  bake-aws-nodistrib:
+  bake-dockerhub-nodistrib:
     uses: ./.github/workflows/bake.yml
     permissions:
       contents: read
@@ -520,7 +462,7 @@ jobs:
     with:
       distribute: false
       cache: true
-      cache-scope: bake-aws-nodistrib
+      cache-scope: bake-dockerhub-nodistrib
       context: test
       output: image
       push: ${{ github.event_name != 'pull_request' }}
@@ -529,14 +471,14 @@ jobs:
         *.args.VERSION={{meta.version}}
       target: hello-cross
       meta-images: |
-        public.ecr.aws/q3b5f1u4/test-docker-action
+        docker.io/dockereng/github-builder-test
       meta-tags: |
         type=raw,value=bake-ghbuilder-nodistrib-${{ github.run_id }}
     secrets:
       registry-auths: |
-        - registry: public.ecr.aws
-          username: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          password: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        - registry: docker.io
+          username: ${{ vars.DOCKERPUBLICBOT_USERNAME }}
+          password: ${{ secrets.DOCKERPUBLICBOT_WRITE_PAT }}
 
   bake-local-nodistrib:
     uses: ./.github/workflows/bake.yml
