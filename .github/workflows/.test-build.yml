@@ -26,7 +26,7 @@ on:
       - 'test/**'
 
 jobs:
-  build-aws-single:
+  build-dockerhub-single:
     uses: ./.github/workflows/build.yml
     permissions:
       contents: read
@@ -35,51 +35,50 @@ jobs:
       build-args: |
         VERSION={{meta.version}}
       cache: true
-      cache-scope: build-aws-single
+      cache-scope: build-dockerhub-single
       file: test/hello.Dockerfile
       output: image
       push: ${{ github.event_name != 'pull_request' }}
       sbom: true
       meta-images: |
-        public.ecr.aws/q3b5f1u4/test-docker-action
+        docker.io/dockereng/github-builder-test
       meta-tags: |
         type=raw,value=build-ghbuilder-single-${{ github.run_id }}
-
     secrets:
       registry-auths: |
-        - registry: public.ecr.aws
-          username: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          password: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        - registry: docker.io
+          username: ${{ vars.DOCKERPUBLICBOT_USERNAME }}
+          password: ${{ secrets.DOCKERPUBLICBOT_WRITE_PAT }}
 
-  build-aws-single-verify:
+  build-dockerhub-single-verify:
     uses: ./.github/workflows/verify.yml
     if: ${{ github.event_name != 'pull_request' }}
     needs:
-      - build-aws-single
+      - build-dockerhub-single
     with:
-      builder-outputs: ${{ toJSON(needs.build-aws-single.outputs) }}
+      builder-outputs: ${{ toJSON(needs.build-dockerhub-single.outputs) }}
     secrets:
       registry-auths: |
-        - registry: public.ecr.aws
-          username: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          password: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        - registry: docker.io
+          username: ${{ vars.DOCKERPUBLICBOT_USERNAME }}
+          password: ${{ secrets.DOCKERPUBLICBOT_WRITE_PAT }}
 
-  build-aws-single-outputs:
+  build-dockerhub-single-outputs:
     runs-on: ubuntu-24.04
     needs:
-      - build-aws-single
+      - build-dockerhub-single
     steps:
       -
         name: Builder outputs
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
-          INPUT_BUILDER-OUTPUTS: ${{ toJSON(needs.build-aws-single.outputs) }}
+          INPUT_BUILDER-OUTPUTS: ${{ toJSON(needs.build-dockerhub-single.outputs) }}
         with:
           script: |
             const builderOutputs = JSON.parse(core.getInput('builder-outputs'));
             core.info(JSON.stringify(builderOutputs, null, 2));
 
-  build-aws:
+  build-dockerhub:
     uses: ./.github/workflows/build.yml
     permissions:
       contents: read
@@ -88,7 +87,7 @@ jobs:
       build-args: |
         VERSION={{meta.version}}
       cache: true
-      cache-scope: build-aws
+      cache-scope: build-dockerhub
       file: test/hello.Dockerfile
       output: image
       platforms: linux/amd64,linux/arm64
@@ -99,63 +98,56 @@ jobs:
         linux/arm64=ubuntu-24.04-arm
       sbom: true
       meta-images: |
-        public.ecr.aws/q3b5f1u4/test-docker-action
+        docker.io/dockereng/github-builder-test
       meta-tags: |
         type=raw,value=build-ghbuilder-${{ github.run_id }}
     secrets:
       registry-auths: |
-        - registry: public.ecr.aws
-          username: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          password: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        - registry: docker.io
+          username: ${{ vars.DOCKERPUBLICBOT_USERNAME }}
+          password: ${{ secrets.DOCKERPUBLICBOT_WRITE_PAT }}
 
-  build-aws-verify:
+  build-dockerhub-verify:
     uses: ./.github/workflows/verify.yml
     if: ${{ github.event_name != 'pull_request' }}
     needs:
-      - build-aws
+      - build-dockerhub
     with:
-      builder-outputs: ${{ toJSON(needs.build-aws.outputs) }}
+      builder-outputs: ${{ toJSON(needs.build-dockerhub.outputs) }}
     secrets:
       registry-auths: |
-        - registry: public.ecr.aws
-          username: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          password: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        - registry: docker.io
+          username: ${{ vars.DOCKERPUBLICBOT_USERNAME }}
+          password: ${{ secrets.DOCKERPUBLICBOT_WRITE_PAT }}
 
-  build-aws-outputs:
+  build-dockerhub-outputs:
     runs-on: ubuntu-24.04
     needs:
-      - build-aws
+      - build-dockerhub
     steps:
       -
         name: Builder outputs
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
-          INPUT_BUILDER-OUTPUTS: ${{ toJSON(needs.build-aws.outputs) }}
+          INPUT_BUILDER-OUTPUTS: ${{ toJSON(needs.build-dockerhub.outputs) }}
         with:
           script: |
             const builderOutputs = JSON.parse(core.getInput('builder-outputs'));
             core.info(JSON.stringify(builderOutputs, null, 2));
 
-  build-aws-scan:
+  build-dockerhub-scan:
     runs-on: ubuntu-24.04
     if: ${{ github.event_name != 'pull_request' }}
     needs:
-      - build-aws
+      - build-dockerhub
     steps:
-      -
-        name: Login to registry
-        uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4.2.0
-        with:
-          registry: public.ecr.aws
-          username: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          password: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       -
         name: Scan for vulnerabilities
         uses: crazy-max/ghaction-container-scan@a0a3900b79d158c85ccf034e5368fae620a9233a # v4.0.0
         with:
-          image: public.ecr.aws/q3b5f1u4/test-docker-action@${{ needs.build-aws.outputs.digest }}
+          image: docker.io/dockereng/github-builder-test@${{ needs.build-dockerhub.outputs.digest }}
 
-  build-aws-nosign:
+  build-dockerhub-nosign:
     uses: ./.github/workflows/build.yml
     permissions:
       contents: read
@@ -164,7 +156,7 @@ jobs:
       build-args: |
         VERSION={{meta.version}}
       cache: true
-      cache-scope: build-aws-nosign
+      cache-scope: build-dockerhub-nosign
       file: test/hello.Dockerfile
       output: image
       platforms: linux/amd64,linux/arm64
@@ -172,38 +164,38 @@ jobs:
       sbom: true
       sign: false
       meta-images: |
-        public.ecr.aws/q3b5f1u4/test-docker-action
+        docker.io/dockereng/github-builder-test
       meta-tags: |
         type=raw,value=build-ghbuilder-nosign--${{ github.run_id }}
     secrets:
       registry-auths: |
-        - registry: public.ecr.aws
-          username: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          password: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        - registry: docker.io
+          username: ${{ vars.DOCKERPUBLICBOT_USERNAME }}
+          password: ${{ secrets.DOCKERPUBLICBOT_WRITE_PAT }}
 
-  build-aws-nosign-verify:
+  build-dockerhub-nosign-verify:
     uses: ./.github/workflows/verify.yml
     if: ${{ github.event_name != 'pull_request' }}
     needs:
-      - build-aws-nosign
+      - build-dockerhub-nosign
     with:
-      builder-outputs: ${{ toJSON(needs.build-aws-nosign.outputs) }}
+      builder-outputs: ${{ toJSON(needs.build-dockerhub-nosign.outputs) }}
     secrets:
       registry-auths: |
-        - registry: public.ecr.aws
-          username: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          password: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        - registry: docker.io
+          username: ${{ vars.DOCKERPUBLICBOT_USERNAME }}
+          password: ${{ secrets.DOCKERPUBLICBOT_WRITE_PAT }}
 
-  build-aws-nosign-outputs:
+  build-dockerhub-nosign-outputs:
     runs-on: ubuntu-24.04
     needs:
-      - build-aws-nosign
+      - build-dockerhub-nosign
     steps:
       -
         name: Builder outputs
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
-          INPUT_BUILDER-OUTPUTS: ${{ toJSON(needs.build-aws-nosign.outputs) }}
+          INPUT_BUILDER-OUTPUTS: ${{ toJSON(needs.build-dockerhub-nosign.outputs) }}
         with:
           script: |
             const builderOutputs = JSON.parse(core.getInput('builder-outputs'));
@@ -260,57 +252,7 @@ jobs:
             const builderOutputs = JSON.parse(core.getInput('builder-outputs'));
             core.info(JSON.stringify(builderOutputs, null, 2));
 
-  build-dockerhub:
-    uses: ./.github/workflows/build.yml
-    permissions:
-      contents: read
-      id-token: write
-    with:
-      build-args: |
-        VERSION={{meta.version}}
-      file: test/hello.Dockerfile
-      output: image
-      platforms: linux/amd64,linux/arm64
-      push: ${{ github.event_name != 'pull_request' }}
-      sbom: true
-      meta-images: docker.io/dockereng/github-builder-test
-      meta-tags: |
-        type=raw,value=build-${{ github.run_id }}
-    secrets:
-      registry-auths: |
-        - registry: docker.io
-          username: ${{ vars.DOCKERPUBLICBOT_USERNAME }}
-          password: ${{ secrets.DOCKERPUBLICBOT_WRITE_PAT }}
-
-  build-dockerhub-verify:
-    uses: ./.github/workflows/verify.yml
-    if: ${{ github.event_name != 'pull_request' }}
-    needs:
-      - build-dockerhub
-    with:
-      builder-outputs: ${{ toJSON(needs.build-dockerhub.outputs) }}
-    secrets:
-      registry-auths: |
-        - registry: docker.io
-          username: ${{ vars.DOCKERPUBLICBOT_USERNAME }}
-          password: ${{ secrets.DOCKERPUBLICBOT_WRITE_PAT }}
-
-  build-dockerhub-outputs:
-    runs-on: ubuntu-24.04
-    needs:
-      - build-dockerhub
-    steps:
-      -
-        name: Builder outputs
-        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
-        env:
-          INPUT_BUILDER-OUTPUTS: ${{ toJSON(needs.build-dockerhub.outputs) }}
-        with:
-          script: |
-            const builderOutputs = JSON.parse(core.getInput('builder-outputs'));
-            core.info(JSON.stringify(builderOutputs, null, 2));
-
-  build-ghcr-and-aws:
+  build-ghcr-and-dockerhub:
     uses: ./.github/workflows/build.yml
     permissions:
       contents: read
@@ -326,44 +268,44 @@ jobs:
       sbom: true
       meta-images: |
         ghcr.io/docker/github-builder-test
-        public.ecr.aws/q3b5f1u4/test-docker-action
+        docker.io/dockereng/github-builder-test
       meta-tags: |
-        type=raw,value=${{ github.run_id }},prefix=build-ghcr-and-aws-
+        type=raw,value=${{ github.run_id }},prefix=build-ghcr-and-dockerhub-
     secrets:
       registry-auths: |
         - registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-        - registry: public.ecr.aws
-          username: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          password: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        - registry: docker.io
+          username: ${{ vars.DOCKERPUBLICBOT_USERNAME }}
+          password: ${{ secrets.DOCKERPUBLICBOT_WRITE_PAT }}
 
-  build-ghcr-and-aws-verify:
+  build-ghcr-and-dockerhub-verify:
     uses: ./.github/workflows/verify.yml
     if: ${{ github.event_name != 'pull_request' }}
     needs:
-      - build-ghcr-and-aws
+      - build-ghcr-and-dockerhub
     with:
-      builder-outputs: ${{ toJSON(needs.build-ghcr-and-aws.outputs) }}
+      builder-outputs: ${{ toJSON(needs.build-ghcr-and-dockerhub.outputs) }}
     secrets:
       registry-auths: |
         - registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-        - registry: public.ecr.aws
-          username: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          password: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        - registry: docker.io
+          username: ${{ vars.DOCKERPUBLICBOT_USERNAME }}
+          password: ${{ secrets.DOCKERPUBLICBOT_WRITE_PAT }}
 
-  build-ghcr-and-aws-outputs:
+  build-ghcr-and-dockerhub-outputs:
     runs-on: ubuntu-24.04
     needs:
-      - build-ghcr-and-aws
+      - build-ghcr-and-dockerhub
     steps:
       -
         name: Builder outputs
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
-          INPUT_BUILDER-OUTPUTS: ${{ toJSON(needs.build-ghcr-and-aws.outputs) }}
+          INPUT_BUILDER-OUTPUTS: ${{ toJSON(needs.build-ghcr-and-dockerhub.outputs) }}
         with:
           script: |
             const builderOutputs = JSON.parse(core.getInput('builder-outputs'));
@@ -559,7 +501,7 @@ jobs:
       platforms: linux/amd64,linux/arm64
       sbom: true
 
-  build-aws-nodistrib:
+  build-dockerhub-nodistrib:
     uses: ./.github/workflows/build.yml
     permissions:
       contents: read
@@ -569,21 +511,21 @@ jobs:
       build-args: |
         VERSION={{meta.version}}
       cache: true
-      cache-scope: build-aws-nodistrib
+      cache-scope: build-dockerhub-nodistrib
       file: test/hello.Dockerfile
       output: image
       platforms: linux/amd64,linux/arm64
       push: ${{ github.event_name != 'pull_request' }}
       sbom: true
       meta-images: |
-        public.ecr.aws/q3b5f1u4/test-docker-action
+        docker.io/dockereng/github-builder-test
       meta-tags: |
         type=raw,value=build-ghbuilder-nodistrib-${{ github.run_id }}
     secrets:
       registry-auths: |
-        - registry: public.ecr.aws
-          username: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          password: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        - registry: docker.io
+          username: ${{ vars.DOCKERPUBLICBOT_USERNAME }}
+          password: ${{ secrets.DOCKERPUBLICBOT_WRITE_PAT }}
 
   build-local-nodistrib:
     uses: ./.github/workflows/build.yml
