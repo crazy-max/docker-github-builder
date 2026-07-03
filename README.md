@@ -18,6 +18,7 @@ ___
   * [Outputs](#outputs-1)
 * [Notes](#notes)
   * [Signed GitHub Actions cache](#signed-github-actions-cache)
+  * [Registry identities](#registry-identities)
   * [Runner mapping](#runner-mapping)
   * [Metadata templates](#metadata-templates)
 
@@ -235,6 +236,7 @@ jobs:
 | `output`                  | String   |                                       | Build output destination (one of [`image`](https://docs.docker.com/build/exporters/image-registry/) or [`local`](https://docs.docker.com/build/exporters/local-tar/)). Unlike the `build-push-action`, it only accepts `image` or `local`. The reusable workflow takes care of setting the `outputs` attribute |
 | `platforms`               | List/CSV |                                       | List of [target platforms](https://docs.docker.com/engine/reference/commandline/buildx_build/#platform) to build                                                                                                                                                                                               |
 | `push`                    | Bool     | `false`                               | [Push](https://docs.docker.com/engine/reference/commandline/buildx_build/#push) image to the registry (for `image` output)                                                                                                                                                                                     |
+| `registry-identities`     | YAML     |                                       | Keyless registry identity configuration. See [Registry identities](#registry-identities).                                                                                                                                                                                                                      |
 | `sbom`                    | Bool     | `false`                               | Generate [SBOM](https://docs.docker.com/build/attestations/sbom/) attestation for the build                                                                                                                                                                                                                    |
 | `shm-size`                | String   |                                       | Size of [`/dev/shm`](https://docs.docker.com/engine/reference/commandline/buildx_build/#shm-size) (e.g., `2g`)                                                                                                                                                                                                 |
 | `sign`                    | String   | `auto`                                | Sign attestation manifest for `image` output or artifacts for `local` output, can be one of `auto`, `true` or `false`. The `auto` mode will enable signing if `push` is enabled for pushing the `image` or if `artifact-upload` is enabled for uploading the `local` build output as GitHub Artifact           |
@@ -344,6 +346,7 @@ jobs:
 | `files`                   | List   | `{context}/docker-bake.hcl`           | List of bake definition files                                                                                                                                                                                                                                                                        |
 | `output`                  | String |                                       | Build output destination (one of [`image`](https://docs.docker.com/build/exporters/image-registry/) or [`local`](https://docs.docker.com/build/exporters/local-tar/)).                                                                                                                               |
 | `push`                    | Bool   | `false`                               | Push image to the registry (for `image` output)                                                                                                                                                                                                                                                      |
+| `registry-identities`     | YAML   |                                       | Keyless registry identity configuration. See [Registry identities](#registry-identities).                                                                                                                                                                                                            |
 | `sbom`                    | Bool   | `false`                               | Generate [SBOM](https://docs.docker.com/build/attestations/sbom/) attestation for the build                                                                                                                                                                                                          |
 | `set`                     | List   |                                       | List of [target values to override](https://docs.docker.com/engine/reference/commandline/buildx_bake/#set) (e.g., `targetpattern.key=value`)                                                                                                                                                         |
 | `sign`                    | String | `auto`                                | Sign attestation manifest for `image` output or artifacts for `local` output, can be one of `auto`, `true` or `false`. The `auto` mode will enable signing if `push` is enabled for pushing the `image` or if `artifact-upload` is enabled for uploading the `local` build output as GitHub Artifact |
@@ -394,6 +397,45 @@ reusable workflows, the Docker-owned workflow is the trusted build boundary.
 Without verification, a poisoned BuildKit cache could influence a later trusted
 build, which is the SLSA isolation concern described in
 [docker/github-builder#56](https://github.com/docker/github-builder/issues/56).
+
+### Registry identities
+
+The `registry-identities` input configures keyless registry authentication from
+non-secret identity metadata. Do not put passwords, tokens, client secrets,
+private keys, raw cloud credential JSON, or other secret values in this input.
+The workflow validates the YAML before any build work starts.
+
+`registry-identities` can be combined with the existing `registry-auths`
+secret. Provider-specific authentication steps are pinned in these reusable
+workflows; callers can only select supported provider types and pass identity
+configuration.
+
+Amazon ECR private registry authentication is configured with `type: aws-ecr`.
+Callers must grant `id-token: write` so the AWS credential step can assume the
+role through GitHub OIDC:
+
+```yaml
+jobs:
+  build:
+    uses: docker/github-builder/.github/workflows/build.yml@v1
+    permissions:
+      contents: read # to fetch the repository content
+      id-token: write # for signing attestations, cache entries with GitHub OIDC and log in to AWS ECR
+    with:
+      output: image
+      push: ${{ github.event_name != 'pull_request' }}
+      meta-images: |
+        123456789100.dkr.ecr.us-east-1.amazonaws.com/sandbox/test-github-builder
+      registry-identities: |
+        - type: aws-ecr
+          aws-region: us-east-1
+          role-to-assume: arn:aws:iam::123456789100:role/my-github-actions-role
+          registry: 123456789100.dkr.ecr.us-east-1.amazonaws.com
+```
+
+The `registry` value is required for AWS ECR. Use the registry server that
+`docker/login-action` should log in to, such as `public.ecr.aws` for public ECR
+or `123456789100.dkr.ecr.us-east-1.amazonaws.com` for private ECR.
 
 ### Runner mapping
 
