@@ -17,6 +17,7 @@ ___
   * [Secrets](#secrets-1)
   * [Outputs](#outputs-1)
 * [Notes](#notes)
+  * [BuildKit secrets](#buildkit-secrets)
   * [Signed GitHub Actions cache](#signed-github-actions-cache)
   * [Runner mapping](#runner-mapping)
   * [Metadata templates](#metadata-templates)
@@ -251,6 +252,7 @@ jobs:
 | Name             | Default               | Description                                                                    |
 |------------------|-----------------------|--------------------------------------------------------------------------------|
 | `registry-auths` |                       | Raw authentication to registries, defined as YAML objects (for `image` output) |
+| `build-secrets`  |                       | YAML object mapping BuildKit secret IDs to secret values                       |
 | `github-token`   | `${{ github.token }}` | GitHub Token used to authenticate against the repository for Git context       |
 
 ### Outputs
@@ -362,6 +364,7 @@ jobs:
 | Name             | Default               | Description                                                                    |
 |------------------|-----------------------|--------------------------------------------------------------------------------|
 | `registry-auths` |                       | Raw authentication to registries, defined as YAML objects (for `image` output) |
+| `build-secrets`  |                       | YAML object mapping BuildKit secret IDs, optionally target-scoped, to secret values |
 | `github-token`   | `${{ github.token }}` | GitHub Token used to authenticate against the repository for Git context       |
 
 ### Outputs
@@ -381,6 +384,59 @@ with `builder-outputs: ${{ toJSON(needs.<job_id>.outputs) }}`.
 | `signed`                 | Bool   | Whether attestation manifests or local artifacts were signed                 |
 
 ## Notes
+
+### BuildKit secrets
+
+The `build-secrets` secret is shared by the build and bake workflows. It must
+be a YAML object. For the build workflow, each key is the BuildKit secret ID and
+each value is the secret payload. The bake workflow accepts the same unqualified
+keys. Secret IDs may contain letters, digits, underscores, and dashes:
+
+```yaml
+secrets:
+  build-secrets: |
+    npmrc: ${{ toJSON(secrets.NPMRC) }}
+    aws_credentials: ${{ toJSON(secrets.AWS_CREDENTIALS) }}
+    inline_config: |
+      first line
+      second line
+```
+
+Use `toJSON(...)` when injecting GitHub secrets so values that contain newlines
+or YAML syntax are preserved as a single YAML scalar.
+
+Each secret is exposed as an env-backed BuildKit secret. The build workflow
+passes these values through `docker/build-push-action` `secret-envs`, and the
+bake workflow appends matching `target.secrets+=id=...,env=...` overrides. For
+the bake workflow, an unqualified key applies to the workflow `target` input. A
+key written as `target.secret_id` applies only to that Bake target. This
+target-scoped key form is only accepted by the bake workflow:
+
+```yaml
+secrets:
+  build-secrets: |
+    default.npmrc: ${{ toJSON(secrets.NPMRC) }}
+    release.aws_credentials: ${{ toJSON(secrets.AWS_CREDENTIALS) }}
+```
+
+Bake targets can declare local secret sources for direct `docker buildx bake`
+usage. When the reusable workflow receives a matching `build-secrets` entry, it
+overrides that source with the workflow-provided secret value:
+
+```hcl
+target "default" {
+  secret = [
+    "id=npmrc,env=NPMRC",
+    "type=file,id=aws_credentials,src=${HOME}/.aws/credentials",
+  ]
+}
+```
+
+The workflow does not accept file-based secret payloads. `build-secrets` values
+are always exposed to BuildKit from environment variables. A Bake target can
+still declare a file-based source for local `docker buildx bake` usage, as shown
+above, but a matching `build-secrets` entry overrides that source in the reusable
+workflow.
 
 ### Signed GitHub Actions cache
 
