@@ -21,6 +21,10 @@ on:
         description: "Whether to cancel all in-progress and queued jobs in the matrix if any job fails"
         required: false
         default: false
+      job-name-prefix:
+        type: string
+        description: "Prefix to prepend to reusable workflow job names in the GitHub Actions UI"
+        required: false
       setup-qemu:
         type: boolean
         description: "Runs the setup-qemu-action step to install QEMU static binaries"
@@ -183,6 +187,7 @@ env:
 
 jobs:
   prepare:
+    name: ${{ inputs.job-name-prefix && format('{0} / prepare', inputs.job-name-prefix) || 'prepare' }}
     runs-on: ubuntu-24.04
     outputs:
       includes: ${{ steps.set.outputs.includes }}
@@ -461,6 +466,7 @@ jobs:
             });
 
   build:
+    name: ${{ inputs.job-name-prefix && format('{0} / build', inputs.job-name-prefix) || 'build' }} (${{ matrix.index }}${{ matrix.platform && format(', {0}', matrix.platform) || '' }}, ${{ matrix.runner }})
     runs-on: ${{ matrix.runner }}
     needs:
       - prepare
@@ -959,6 +965,7 @@ jobs:
             core.setOutput(`result_${inpIndex}`, JSON.stringify(result));
 
   finalize:
+    name: ${{ inputs.job-name-prefix && format('{0} / finalize', inputs.job-name-prefix) || 'finalize' }}
     runs-on: ubuntu-24.04
     outputs:
       meta-json: ${{ steps.meta.outputs.json }}
