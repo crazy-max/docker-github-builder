@@ -589,9 +589,9 @@ jobs:
       packages: write
     with:
       annotations: |
-        io.github.docker.github-builder.test-index-annotation=build-${{ github.run_id }}
+        io.github.docker.github-builder.test-direct-index-annotation={{meta.version}}
       labels: |
-        io.github.docker.github-builder.test-label=build-${{ github.run_id }}
+        io.github.docker.github-builder.test-direct-label=build-{{meta.version}}
       build-args: |
         VERSION={{meta.version}}
       file: test/hello.Dockerfile
@@ -604,6 +604,10 @@ jobs:
       meta-images: ghcr.io/docker/github-builder-test
       meta-tags: |
         type=raw,value=build-index-annotations-${{ github.run_id }}
+      meta-labels: |
+        io.github.docker.github-builder.test-meta-label=build-${{ github.run_id }}
+      meta-annotations: |
+        io.github.docker.github-builder.test-meta-index-annotation=build-${{ github.run_id }}
     secrets:
       registry-auths: |
         - registry: ghcr.io
