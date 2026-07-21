@@ -410,7 +410,8 @@ passes these values through `docker/build-push-action` `secret-envs`, and the
 bake workflow appends matching `target.secrets+=id=...,env=...` overrides. For
 the bake workflow, an unqualified key applies to the workflow `target` input. A
 key written as `target.secret_id` applies only to that Bake target. This
-target-scoped key form is only accepted by the bake workflow:
+target-scoped key form is only accepted by the bake workflow. The target must
+already declare a matching secret ID in the Bake definition:
 
 ```yaml
 secrets:
@@ -421,7 +422,7 @@ secrets:
 
 Bake targets can declare local secret sources for direct `docker buildx bake`
 usage. When the reusable workflow receives a matching `build-secrets` entry, it
-overrides that source with the workflow-provided secret value:
+overrides that declared source with the workflow-provided secret value:
 
 ```hcl
 target "default" {
