@@ -7,6 +7,11 @@ on:
         type: string
         description: "Keyless registry identity configuration as YAML objects"
         required: false
+      registry-login:
+        type: boolean
+        description: "Whether registry login is enabled"
+        required: false
+        default: true
     outputs:
       aws-ecr-enabled:
         description: "Whether an AWS ECR registry identity was configured"
@@ -86,8 +91,15 @@ jobs:
           INPUT_RUNTIME-MODULE: ${{ env.RUNTIME_MODULE }}
           INPUT_RUNTIME-INSTALL-ARGS: ${{ env.RUNTIME_INSTALL_ARGS }}
           INPUT_REGISTRY-IDENTITIES: ${{ inputs.registry-identities }}
+          INPUT_REGISTRY-LOGIN: ${{ inputs.registry-login }}
         with:
           script: |
+            const registryLogin = core.getBooleanInput('registry-login');
+            if (!registryLogin) {
+              core.info('Registry authentication not required; skipping npm install');
+              return;
+            }
+
             const registryIdentities = core.getInput('registry-identities', {trimWhitespace: false});
             if (!registryIdentities.trim()) {
               core.info('No registry identities configured; skipping npm install');
@@ -115,6 +127,7 @@ jobs:
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
           INPUT_REGISTRY-IDENTITIES: ${{ inputs.registry-identities }}
+          INPUT_REGISTRY-LOGIN: ${{ inputs.registry-login }}
         with:
           script: |
             const setEmptyOutputs = () => {
@@ -132,6 +145,13 @@ jobs:
               core.setOutput('dockerhub-oidc-username', '');
               core.setOutput('dockerhub-oidc-connection-id', '');
             };
+
+            const registryLogin = core.getBooleanInput('registry-login');
+            if (!registryLogin) {
+              core.info('Registry authentication not required; skipping validation');
+              setEmptyOutputs();
+              return;
+            }
 
             const registryIdentities = core.getInput('registry-identities', {trimWhitespace: false});
             if (!registryIdentities.trim()) {

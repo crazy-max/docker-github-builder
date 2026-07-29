@@ -408,7 +408,8 @@ build, which is the SLSA isolation concern described in
 The `registry-identities` input configures keyless registry authentication from
 non-secret identity metadata. Do not put passwords, tokens, client secrets,
 private keys, raw cloud credential JSON, or other secret values in this input.
-The workflow validates the YAML before any build work starts.
+When an image push or verification needs registry access, the workflow validates
+the YAML before any build work starts.
 
 `registry-identities` can be combined with the existing `registry-auths`
 secret. Provider-specific authentication steps are pinned in these reusable

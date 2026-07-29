@@ -206,6 +206,7 @@ jobs:
   registry-identities:
     uses: ./.github/workflows/setup-registry-identities.yml
     with:
+      registry-login: ${{ inputs.push && inputs.output == 'image' }}
       registry-identities: ${{ inputs.registry-identities }}
 
   prepare:

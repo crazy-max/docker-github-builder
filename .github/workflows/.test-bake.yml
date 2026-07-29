@@ -524,6 +524,10 @@ jobs:
       context: test
       output: image
       push: false
+      registry-identities: |
+        - type: dockerhub
+          username: dockereng
+          connection_id: ${{ vars.MISSING_DOCKERHUB_OIDC_CONNECTIONID }}
       set: |
         *.args.VERSION={{meta.version}}
       target: hello-cross
