@@ -170,11 +170,13 @@ jobs:
             const fail = message => {
               throw new Error(`Invalid registry-identities input: ${message}`);
             };
+
             const ensureObject = (value, path) => {
               if (!value || typeof value !== 'object' || Array.isArray(value)) {
                 fail(`${path} must be an object`);
               }
             };
+
             const requireString = (entry, key, path) => {
               const value = entry[key];
               if (typeof value !== 'string' || !value.trim()) {
@@ -182,104 +184,110 @@ jobs:
               }
               return value.trim();
             };
+
             const optionalString = (entry, key, path, defaultValue) => {
               if (!Object.prototype.hasOwnProperty.call(entry, key)) {
                 return defaultValue;
               }
               return requireString(entry, key, path);
             };
-            let parsed;
+
             try {
-              parsed = yaml.load(registryIdentities);
-            } catch (error) {
-              fail(error.message);
-            }
-            if (parsed === null || parsed === undefined) {
-              setEmptyOutputs();
-              return;
-            }
-
-            const entries = Array.isArray(parsed) ? parsed : [parsed];
-            if (entries.length === 0) {
-              setEmptyOutputs();
-              return;
-            }
-
-            let awsEcr;
-            let gcpWif;
-            let dockerhubOidc;
-            entries.forEach((entry, index) => {
-              const path = `registry-identities[${index}]`;
-              ensureObject(entry, path);
-              const type = requireString(entry, 'type', path);
-              switch (type) {
-                case 'aws-ecr': {
-                  const allowedKeys = new Set(['type', 'registry', 'role-to-assume', 'region']);
-                  for (const key of Object.keys(entry)) {
-                    if (!allowedKeys.has(key)) {
-                      fail(`${path}.${key} is not supported for aws-ecr`);
-                    }
-                  }
-                  if (awsEcr) {
-                    fail('only one aws-ecr registry identity is supported');
-                  }
-                  awsEcr = {
-                    registry: requireString(entry, 'registry', path),
-                    roleToAssume: requireString(entry, 'role-to-assume', path),
-                    region: requireString(entry, 'region', path)
-                  };
-                  break;
-                }
-                case 'gcp-wif': {
-                  const allowedKeys = new Set(['type', 'registry', 'workload_identity_provider', 'service_account', 'project_id']);
-                  for (const key of Object.keys(entry)) {
-                    if (!allowedKeys.has(key)) {
-                      fail(`${path}.${key} is not supported for gcp-wif`);
-                    }
-                  }
-                  if (gcpWif) {
-                    fail('only one gcp-wif registry identity is supported');
-                  }
-                  gcpWif = {
-                    registry: requireString(entry, 'registry', path),
-                    workloadIdentityProvider: requireString(entry, 'workload_identity_provider', path),
-                    serviceAccount: requireString(entry, 'service_account', path),
-                    projectId: requireString(entry, 'project_id', path)
-                  };
-                  break;
-                }
-                case 'dockerhub': {
-                  const allowedKeys = new Set(['type', 'registry', 'username', 'connection_id']);
-                  for (const key of Object.keys(entry)) {
-                    if (!allowedKeys.has(key)) {
-                      fail(`${path}.${key} is not supported for dockerhub`);
-                    }
-                  }
-                  if (dockerhubOidc) {
-                    fail('only one dockerhub registry identity is supported');
-                  }
-                  dockerhubOidc = {
-                    registry: optionalString(entry, 'registry', path, 'docker.io'),
-                    username: requireString(entry, 'username', path),
-                    connectionID: requireString(entry, 'connection_id', path)
-                  };
-                  break;
-                }
-                default:
-                  fail(`${path}.type has unsupported provider ${type}`);
+              let parsed;
+              try {
+                parsed = yaml.load(registryIdentities);
+              } catch (error) {
+                fail(error.message);
               }
-            });
+              if (parsed === null || parsed === undefined) {
+                setEmptyOutputs();
+                return;
+              }
 
-            core.setOutput('aws-ecr-enabled', awsEcr ? 'true' : 'false');
-            core.setOutput('aws-ecr-registry', awsEcr?.registry || '');
-            core.setOutput('aws-ecr-role-to-assume', awsEcr?.roleToAssume || '');
-            core.setOutput('aws-ecr-region', awsEcr?.region || '');
-            core.setOutput('gcp-wif-enabled', gcpWif ? 'true' : 'false');
-            core.setOutput('gcp-wif-registry', gcpWif?.registry || '');
-            core.setOutput('gcp-wif-workload-identity-provider', gcpWif?.workloadIdentityProvider || '');
-            core.setOutput('gcp-wif-service-account', gcpWif?.serviceAccount || '');
-            core.setOutput('gcp-wif-project-id', gcpWif?.projectId || '');
-            core.setOutput('dockerhub-oidc-enabled', dockerhubOidc ? 'true' : 'false');
-            core.setOutput('dockerhub-oidc-registry', dockerhubOidc?.registry || '');
-            core.setOutput('dockerhub-oidc-username', dockerhubOidc?.username || '');
-            core.setOutput('dockerhub-oidc-connection-id', dockerhubOidc?.connectionID || '');
+              const entries = Array.isArray(parsed) ? parsed : [parsed];
+              if (entries.length === 0) {
+                setEmptyOutputs();
+                return;
+              }
+
+              let awsEcr;
+              let gcpWif;
+              let dockerhubOidc;
+              entries.forEach((entry, index) => {
+                const path = `registry-identities[${index}]`;
+                ensureObject(entry, path);
+                const type = requireString(entry, 'type', path);
+                switch (type) {
+                  case 'aws-ecr': {
+                    const allowedKeys = new Set(['type', 'registry', 'role-to-assume', 'region']);
+                    for (const key of Object.keys(entry)) {
+                      if (!allowedKeys.has(key)) {
+                        fail(`${path}.${key} is not supported for aws-ecr`);
+                      }
+                    }
+                    if (awsEcr) {
+                      fail('only one aws-ecr registry identity is supported');
+                    }
+                    awsEcr = {
+                      registry: requireString(entry, 'registry', path),
+                      roleToAssume: requireString(entry, 'role-to-assume', path),
+                      region: requireString(entry, 'region', path)
+                    };
+                    break;
+                  }
+                  case 'gcp-wif': {
+                    const allowedKeys = new Set(['type', 'registry', 'workload_identity_provider', 'service_account', 'project_id']);
+                    for (const key of Object.keys(entry)) {
+                      if (!allowedKeys.has(key)) {
+                        fail(`${path}.${key} is not supported for gcp-wif`);
+                      }
+                    }
+                    if (gcpWif) {
+                      fail('only one gcp-wif registry identity is supported');
+                    }
+                    gcpWif = {
+                      registry: requireString(entry, 'registry', path),
+                      workloadIdentityProvider: requireString(entry, 'workload_identity_provider', path),
+                      serviceAccount: requireString(entry, 'service_account', path),
+                      projectId: optionalString(entry, 'project_id', path, '')
+                    };
+                    break;
+                  }
+                  case 'dockerhub': {
+                    const allowedKeys = new Set(['type', 'registry', 'username', 'connection_id']);
+                    for (const key of Object.keys(entry)) {
+                      if (!allowedKeys.has(key)) {
+                        fail(`${path}.${key} is not supported for dockerhub`);
+                      }
+                    }
+                    if (dockerhubOidc) {
+                      fail('only one dockerhub registry identity is supported');
+                    }
+                    dockerhubOidc = {
+                      registry: optionalString(entry, 'registry', path, 'docker.io'),
+                      username: requireString(entry, 'username', path),
+                      connectionID: requireString(entry, 'connection_id', path)
+                    };
+                    break;
+                  }
+                  default:
+                    fail(`${path}.type has unsupported provider ${type}`);
+                }
+              });
+
+              core.setOutput('aws-ecr-enabled', awsEcr ? 'true' : 'false');
+              core.setOutput('aws-ecr-registry', awsEcr?.registry || '');
+              core.setOutput('aws-ecr-role-to-assume', awsEcr?.roleToAssume || '');
+              core.setOutput('aws-ecr-region', awsEcr?.region || '');
+              core.setOutput('gcp-wif-enabled', gcpWif ? 'true' : 'false');
+              core.setOutput('gcp-wif-registry', gcpWif?.registry || '');
+              core.setOutput('gcp-wif-workload-identity-provider', gcpWif?.workloadIdentityProvider || '');
+              core.setOutput('gcp-wif-service-account', gcpWif?.serviceAccount || '');
+              core.setOutput('gcp-wif-project-id', gcpWif?.projectId || '');
+              core.setOutput('dockerhub-oidc-enabled', dockerhubOidc ? 'true' : 'false');
+              core.setOutput('dockerhub-oidc-registry', dockerhubOidc?.registry || '');
+              core.setOutput('dockerhub-oidc-username', dockerhubOidc?.username || '');
+              core.setOutput('dockerhub-oidc-connection-id', dockerhubOidc?.connectionID || '');
+            } catch (error) {
+              core.setFailed(error.message || error);
+            }

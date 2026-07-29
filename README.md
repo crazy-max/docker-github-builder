@@ -445,12 +445,12 @@ jobs:
           connection_id: 123e4567-e89b-42d3-a456-426614174000
 ```
 
-| Name            | Type   | Description                                                                 |
-|-----------------|--------|-----------------------------------------------------------------------------|
-| `type`          | String | Registry identity provider type. Must be `dockerhub`.                       |
-| `registry`      | String | Registry hostname passed to `docker/login-action`. Defaults to `docker.io`. |
-| `username`      | String | Docker Hub username or organization passed to `docker/login-action`.        |
-| `connection_id` | String | Docker Hub OIDC connection ID passed to `docker/login-action` in each job.  |
+| Name            | Type   | Required | Description                                                                 |
+|-----------------|--------|----------|-----------------------------------------------------------------------------|
+| `type`          | String | Yes      | Registry identity provider type. Must be `dockerhub`.                       |
+| `registry`      | String | No       | Registry hostname passed to `docker/login-action`. Defaults to `docker.io`. |
+| `username`      | String | Yes      | Docker Hub username or organization passed to `docker/login-action`.        |
+| `connection_id` | String | Yes      | Docker Hub OIDC connection ID passed to `docker/login-action` in each job.  |
 
 The workflow mints the Docker Hub access token inside each reusable workflow
 job that needs Docker Hub registry access. The token is not accepted as an
@@ -483,12 +483,12 @@ jobs:
           region: us-east-1
 ```
 
-| Name             | Type   | Description                                                                                                                     |
-|------------------|--------|---------------------------------------------------------------------------------------------------------------------------------|
-| `type`           | String | Registry identity provider type. Must be `aws-ecr`.                                                                             |
-| `registry`       | String | Registry server passed to `docker/login-action`, such as `public.ecr.aws` for public ECR or a private ECR host for private ECR. |
-| `role-to-assume` | String | IAM role ARN assumed through GitHub OIDC.                                                                                       |
-| `region`         | String | AWS region passed to `aws-actions/configure-aws-credentials` when assuming the role. Use `us-east-1` for ECR Public.            |
+| Name             | Type   | Required | Description                                                                                                                     |
+|------------------|--------|----------|---------------------------------------------------------------------------------------------------------------------------------|
+| `type`           | String | Yes      | Registry identity provider type. Must be `aws-ecr`.                                                                             |
+| `registry`       | String | Yes      | Registry server passed to `docker/login-action`, such as `public.ecr.aws` for public ECR or a private ECR host for private ECR. |
+| `role-to-assume` | String | Yes      | IAM role ARN assumed through GitHub OIDC.                                                                                       |
+| `region`         | String | Yes      | AWS region passed to `aws-actions/configure-aws-credentials` when assuming the role. Use `us-east-1` for ECR Public.            |
 
 The `registry` value is required for AWS ECR. Use the registry server that
 `docker/login-action` should log in to, such as `public.ecr.aws` for public ECR
@@ -520,13 +520,13 @@ jobs:
           project_id: my-project
 ```
 
-| Name                         | Type   | Description                                                                                                                                    |
-|------------------------------|--------|------------------------------------------------------------------------------------------------------------------------------------------------|
-| `type`                       | String | Registry identity provider type. Must be `gcp-wif`.                                                                                            |
-| `registry`                   | String | Google Artifact Registry host passed to `docker/login-action`, such as `us-docker.pkg.dev`. Do not use the full repository path.               |
-| `workload_identity_provider` | String | Workload Identity Provider resource name passed to `google-github-actions/auth`.                                                               |
-| `service_account`            | String | Service account email passed to `google-github-actions/auth` for Workload Identity Federation.                                                 |
-| `project_id`                 | String | Google Cloud project ID passed to `google-github-actions/auth`.                                                                                |
+| Name                         | Type   | Required | Description                                                                                                                                    |
+|------------------------------|--------|----------|------------------------------------------------------------------------------------------------------------------------------------------------|
+| `type`                       | String | Yes      | Registry identity provider type. Must be `gcp-wif`.                                                                                            |
+| `registry`                   | String | Yes      | Google Artifact Registry host passed to `docker/login-action`, such as `us-docker.pkg.dev`. Do not use the full repository path.               |
+| `workload_identity_provider` | String | Yes      | Workload Identity Provider resource name passed to `google-github-actions/auth`.                                                               |
+| `service_account`            | String | Yes      | Service account email passed to `google-github-actions/auth` for Workload Identity Federation.                                                 |
+| `project_id`                 | String | No       | Google Cloud project ID passed to `google-github-actions/auth` when provided.                                                                  |
 
 The `registry` value is required for GCP WIF. Use the Artifact Registry host
 that `docker/login-action` should log in to, such as `us-docker.pkg.dev`, not
