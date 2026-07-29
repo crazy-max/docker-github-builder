@@ -106,6 +106,7 @@ jobs:
               return;
             }
 
+            core.info('Registry identities configured; installing validation dependencies');
             const npmArgs = ['install', ...core.getMultilineInput('runtime-install-args'), core.getInput('runtime-module')];
             const maxAttempts = 3;
             for (let attempt = 1; attempt <= maxAttempts; attempt++) {
@@ -200,15 +201,18 @@ jobs:
                 fail(error.message);
               }
               if (parsed === null || parsed === undefined) {
+                core.info('Registry identities input is empty after parsing; disabling registry identity outputs');
                 setEmptyOutputs();
                 return;
               }
 
               const entries = Array.isArray(parsed) ? parsed : [parsed];
               if (entries.length === 0) {
+                core.info('No registry identity entries parsed; disabling registry identity outputs');
                 setEmptyOutputs();
                 return;
               }
+              core.info(`Validating ${entries.length} registry identity ${entries.length === 1 ? 'entry' : 'entries'}`);
 
               let awsEcr;
               let gcpWif;
@@ -233,6 +237,7 @@ jobs:
                       roleToAssume: requireString(entry, 'role-to-assume', path),
                       region: requireString(entry, 'region', path)
                     };
+                    core.info(`Configured aws-ecr registry identity for ${awsEcr.registry}`);
                     break;
                   }
                   case 'gcp-wif': {
@@ -251,6 +256,7 @@ jobs:
                       serviceAccount: requireString(entry, 'service_account', path),
                       projectId: optionalString(entry, 'project_id', path, '')
                     };
+                    core.info(`Configured gcp-wif registry identity for ${gcpWif.registry}`);
                     break;
                   }
                   case 'dockerhub': {
@@ -268,6 +274,7 @@ jobs:
                       username: requireString(entry, 'username', path),
                       connectionID: requireString(entry, 'connection_id', path)
                     };
+                    core.info(`Configured dockerhub registry identity for ${dockerhubOidc.registry}`);
                     break;
                   }
                   default:
