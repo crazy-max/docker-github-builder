@@ -474,13 +474,13 @@ jobs:
       artifact-upload: false
       context: test
       output: local
-      target: secret
+      target: foosec
     secrets:
       build-secrets: |
         fixture_plain: |
           alpha-line
           beta-line
-        secret.fixture_json: ${{ toJSON(format('gamma-line{0}delta-line{0}', fromJSON('"\n"'))) }}
+        foosec.fixture_json: ${{ toJSON(format('gamma-line{0}delta-line{0}', fromJSON('"\n"'))) }}
 
   bake-set-runner:
     uses: ./.github/workflows/bake.yml

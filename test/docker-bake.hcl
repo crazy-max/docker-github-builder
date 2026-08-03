@@ -38,7 +38,7 @@ target "hello-cross" {
   platforms = ["linux/amd64", "linux/arm64"]
 }
 
-target "secret" {
+target "foosec" {
   dockerfile = "secret.Dockerfile"
   secret = [
     "id=fixture_plain,env=FIXTURE_PLAIN",

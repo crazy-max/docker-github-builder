@@ -398,7 +398,7 @@ with `builder-outputs: ${{ toJSON(needs.<job_id>.outputs) }}`.
 The `build-secrets` secret is shared by the build and bake workflows. It must
 be a YAML object. For the build workflow, each key is the BuildKit secret ID and
 each value is the secret payload. The bake workflow accepts the same unqualified
-keys. Secret IDs may contain letters, digits, underscores, and dashes:
+keys.
 
 ```yaml
 secrets:
@@ -415,11 +415,12 @@ or YAML syntax are preserved as a single YAML scalar.
 
 Each secret is exposed as an env-backed BuildKit secret. The build workflow
 passes these values through `docker/build-push-action` `secret-envs`, and the
-bake workflow appends matching `target.secrets+=id=...,env=...` overrides. For
+bake workflow sets matching `target.secret.<id>=env=...` source overrides. For
 the bake workflow, an unqualified key applies to the workflow `target` input. A
 key written as `target.secret_id` applies only to that Bake target. This
-target-scoped key form is only accepted by the bake workflow. The target must
-already declare a matching secret ID in the Bake definition:
+target-scoped key form is only accepted by the bake workflow. The target must be
+part of the resolved Bake build, and Buildx requires the target to already
+declare a matching secret ID in the Bake definition:
 
 ```yaml
 secrets:

@@ -800,9 +800,9 @@ jobs:
               version: inpMetaVersion,
               tags: inpMetaTags
             };
-
             const renderTemplate = value => Util.compileHandlebars(value, {noEscape: true}, {meta});
-            const toMultilineInput = value => value.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
+            
+            const isInputKeySafe = value => value && !/[\r\n=]/.test(value);
             const parseBuildSecrets = value => {
               const normalized = value.trim();
               if (!normalized) {
@@ -821,10 +821,9 @@ jobs:
               if (Array.isArray(parsed) || typeof parsed !== 'object') {
                 throw new Error('build-secrets must be a YAML object');
               }
-              const secrets = {};
               for (const [id, secret] of Object.entries(parsed)) {
-                if (!/^[A-Za-z0-9_-]+$/.test(id)) {
-                  throw new Error(`Invalid build secret id "${id}": use letters, digits, underscores or dashes`);
+                if (!isInputKeySafe(id)) {
+                  throw new Error(`Invalid build secret id "${id}": must not be empty or contain line breaks or "="`);
                 }
                 if (id === 'GIT_AUTH_TOKEN') {
                   throw new Error('Build secret id "GIT_AUTH_TOKEN" is reserved for Git context authentication');
@@ -832,13 +831,9 @@ jobs:
                 if (typeof secret !== 'string') {
                   throw new Error(`build-secrets value for "${id}" must be a string`);
                 }
-                if (secret.length === 0) {
-                  throw new Error(`build-secrets value for "${id}" must not be empty`);
-                }
                 core.setSecret(secret);
-                secrets[id] = secret;
               }
-              return secrets;
+              return parsed;
             };
             const toBuildSecretEnvName = (id, index) => `BUILD_SECRET_${index}_${id.toUpperCase().replace(/[^A-Z0-9_]/g, '_')}`;
             
@@ -879,6 +874,7 @@ jobs:
             let labels;
             let buildArgs;
             try {
+              const toMultilineInput = value => value.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
               annotations = toMultilineInput(renderTemplate(inpAnnotations));
               labels = toMultilineInput(renderTemplate(inpLabels));
               buildArgs = renderTemplate(inpBuildArgs);
