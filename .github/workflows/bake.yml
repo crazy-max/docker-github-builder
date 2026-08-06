@@ -94,7 +94,7 @@ on:
       target:
         type: string
         description: "Bake target to build"
-        required: true
+        required: false
         default: default
       vars:
         type: string
