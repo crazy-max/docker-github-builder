@@ -44,28 +44,31 @@ jobs:
       set: |
         *.args.VERSION={{meta.version}}
       target: hello
+      registry-identities: |
+        - type: dockerhub
+          registry: docker.io
+          username: ${{ vars.DOCKERHUB_OIDC_USERNAME }}
+          connection_id: ${{ vars.DOCKERHUB_OIDC_CONNECTIONID }}
       meta-images: |
         docker.io/dockereng/github-builder-test
       meta-tags: |
         type=raw,value=bake-ghbuilder-single-${{ github.run_id }}
-    secrets:
-      registry-auths: |
-        - registry: docker.io
-          username: ${{ vars.DOCKERPUBLICBOT_USERNAME }}
-          password: ${{ secrets.DOCKERPUBLICBOT_WRITE_PAT }}
 
   bake-dockerhub-single-verify:
     uses: ./.github/workflows/verify.yml
     if: ${{ github.event_name != 'pull_request' }}
     needs:
       - bake-dockerhub-single
+    permissions:
+      contents: read
+      id-token: write
     with:
       builder-outputs: ${{ toJSON(needs.bake-dockerhub-single.outputs) }}
-    secrets:
-      registry-auths: |
-        - registry: docker.io
-          username: ${{ vars.DOCKERPUBLICBOT_USERNAME }}
-          password: ${{ secrets.DOCKERPUBLICBOT_WRITE_PAT }}
+      registry-identities: |
+        - type: dockerhub
+          registry: docker.io
+          username: ${{ vars.DOCKERHUB_OIDC_USERNAME }}
+          connection_id: ${{ vars.DOCKERHUB_OIDC_CONNECTIONID }}
 
   bake-dockerhub-single-outputs:
     runs-on: ubuntu-24.04
@@ -149,28 +152,31 @@ jobs:
       set: |
         *.args.VERSION={{meta.version}}
       target: hello-cross
+      registry-identities: |
+        - type: dockerhub
+          registry: docker.io
+          username: ${{ vars.DOCKERHUB_OIDC_USERNAME }}
+          connection_id: ${{ vars.DOCKERHUB_OIDC_CONNECTIONID }}
       meta-images: |
         docker.io/dockereng/github-builder-test
       meta-tags: |
         type=raw,value=bake-ghbuilder-${{ github.run_id }}
-    secrets:
-      registry-auths: |
-        - registry: docker.io
-          username: ${{ vars.DOCKERPUBLICBOT_USERNAME }}
-          password: ${{ secrets.DOCKERPUBLICBOT_WRITE_PAT }}
 
   bake-dockerhub-verify:
     uses: ./.github/workflows/verify.yml
     if: ${{ github.event_name != 'pull_request' }}
     needs:
       - bake-dockerhub
+    permissions:
+      contents: read
+      id-token: write
     with:
       builder-outputs: ${{ toJSON(needs.bake-dockerhub.outputs) }}
-    secrets:
-      registry-auths: |
-        - registry: docker.io
-          username: ${{ vars.DOCKERPUBLICBOT_USERNAME }}
-          password: ${{ secrets.DOCKERPUBLICBOT_WRITE_PAT }}
+      registry-identities: |
+        - type: dockerhub
+          registry: docker.io
+          username: ${{ vars.DOCKERHUB_OIDC_USERNAME }}
+          connection_id: ${{ vars.DOCKERHUB_OIDC_CONNECTIONID }}
 
   bake-dockerhub-outputs:
     runs-on: ubuntu-24.04
@@ -182,63 +188,6 @@ jobs:
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
           INPUT_BUILDER-OUTPUTS: ${{ toJSON(needs.bake-dockerhub.outputs) }}
-        with:
-          script: |
-            const builderOutputs = JSON.parse(core.getInput('builder-outputs'));
-            core.info(JSON.stringify(builderOutputs, null, 2));
-
-  bake-dockerhub-oidc:
-    uses: ./.github/workflows/bake.yml
-    if: ${{ github.event_name != 'pull_request' }}
-    permissions:
-      contents: read
-      id-token: write
-    with:
-      job-name-prefix: bake-dockerhub-oidc
-      context: test
-      output: image
-      push: true
-      sbom: true
-      set: |
-        *.args.VERSION={{meta.version}}
-      target: hello
-      registry-identities: |
-        - type: dockerhub
-          registry: docker.io
-          username: ${{ vars.DOCKERHUB_OIDC_USERNAME }}
-          connection_id: ${{ vars.DOCKERHUB_OIDC_CONNECTIONID }}
-      meta-images: |
-        docker.io/dockereng/github-builder-test
-      meta-tags: |
-        type=raw,value=bake-ghbuilder-oidc-${{ github.run_id }}
-
-  bake-dockerhub-oidc-verify:
-    uses: ./.github/workflows/verify.yml
-    if: ${{ github.event_name != 'pull_request' }}
-    needs:
-      - bake-dockerhub-oidc
-    permissions:
-      contents: read
-      id-token: write
-    with:
-      builder-outputs: ${{ toJSON(needs.bake-dockerhub-oidc.outputs) }}
-      registry-identities: |
-        - type: dockerhub
-          registry: docker.io
-          username: ${{ vars.DOCKERHUB_OIDC_USERNAME }}
-          connection_id: ${{ vars.DOCKERHUB_OIDC_CONNECTIONID }}
-
-  bake-dockerhub-oidc-outputs:
-    runs-on: ubuntu-24.04
-    if: ${{ github.event_name != 'pull_request' }}
-    needs:
-      - bake-dockerhub-oidc
-    steps:
-      -
-        name: Builder outputs
-        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
-        env:
-          INPUT_BUILDER-OUTPUTS: ${{ toJSON(needs.bake-dockerhub-oidc.outputs) }}
         with:
           script: |
             const builderOutputs = JSON.parse(core.getInput('builder-outputs'));
@@ -272,15 +221,15 @@ jobs:
         *.args.VERSION={{meta.version}}
       sign: false
       target: hello-cross
+      registry-identities: |
+        - type: dockerhub
+          registry: docker.io
+          username: ${{ vars.DOCKERHUB_OIDC_USERNAME }}
+          connection_id: ${{ vars.DOCKERHUB_OIDC_CONNECTIONID }}
       meta-images: |
         docker.io/dockereng/github-builder-test
       meta-tags: |
         type=raw,value=bake-ghbuilder-nosign-${{ github.run_id }}
-    secrets:
-      registry-auths: |
-        - registry: docker.io
-          username: ${{ vars.DOCKERPUBLICBOT_USERNAME }}
-          password: ${{ secrets.DOCKERPUBLICBOT_WRITE_PAT }}
 
   bake-dockerhub-nosign-verify:
     uses: ./.github/workflows/verify.yml
@@ -289,11 +238,6 @@ jobs:
       - bake-dockerhub-nosign
     with:
       builder-outputs: ${{ toJSON(needs.bake-dockerhub-nosign.outputs) }}
-    secrets:
-      registry-auths: |
-        - registry: docker.io
-          username: ${{ vars.DOCKERPUBLICBOT_USERNAME }}
-          password: ${{ secrets.DOCKERPUBLICBOT_WRITE_PAT }}
 
   bake-dockerhub-nosign-outputs:
     runs-on: ubuntu-24.04
@@ -329,30 +273,37 @@ jobs:
         docker.io/dockereng/github-builder-test
       meta-tags: |
         type=raw,value=${{ github.run_id }},prefix=bake-ghcr-and-dockerhub-
+      registry-identities: |
+        - type: dockerhub
+          registry: docker.io
+          username: ${{ vars.DOCKERHUB_OIDC_USERNAME }}
+          connection_id: ${{ vars.DOCKERHUB_OIDC_CONNECTIONID }}
     secrets:
       registry-auths: |
         - registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-        - registry: docker.io
-          username: ${{ vars.DOCKERPUBLICBOT_USERNAME }}
-          password: ${{ secrets.DOCKERPUBLICBOT_WRITE_PAT }}
 
   bake-ghcr-and-dockerhub-verify:
     uses: ./.github/workflows/verify.yml
     if: ${{ github.event_name != 'pull_request' }}
     needs:
       - bake-ghcr-and-dockerhub
+    permissions:
+      contents: read
+      id-token: write
     with:
       builder-outputs: ${{ toJSON(needs.bake-ghcr-and-dockerhub.outputs) }}
+      registry-identities: |
+        - type: dockerhub
+          registry: docker.io
+          username: ${{ vars.DOCKERHUB_OIDC_USERNAME }}
+          connection_id: ${{ vars.DOCKERHUB_OIDC_CONNECTIONID }}
     secrets:
       registry-auths: |
         - registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-        - registry: docker.io
-          username: ${{ vars.DOCKERPUBLICBOT_USERNAME }}
-          password: ${{ secrets.DOCKERPUBLICBOT_WRITE_PAT }}
 
   bake-ghcr-and-dockerhub-outputs:
     runs-on: ubuntu-24.04
@@ -526,7 +477,7 @@ jobs:
       push: false
       registry-identities: |
         - type: dockerhub
-          username: dockereng
+          username: ${{ vars.DOCKERHUB_OIDC_USERNAME }}
           connection_id: ${{ vars.MISSING_DOCKERHUB_OIDC_CONNECTIONID }}
       set: |
         *.args.VERSION={{meta.version}}
@@ -583,15 +534,15 @@ jobs:
       set: |
         *.args.VERSION={{meta.version}}
       target: hello-cross
+      registry-identities: |
+        - type: dockerhub
+          registry: docker.io
+          username: ${{ vars.DOCKERHUB_OIDC_USERNAME }}
+          connection_id: ${{ vars.DOCKERHUB_OIDC_CONNECTIONID }}
       meta-images: |
         docker.io/dockereng/github-builder-test
       meta-tags: |
         type=raw,value=bake-ghbuilder-nodistrib-${{ github.run_id }}
-    secrets:
-      registry-auths: |
-        - registry: docker.io
-          username: ${{ vars.DOCKERPUBLICBOT_USERNAME }}
-          password: ${{ secrets.DOCKERPUBLICBOT_WRITE_PAT }}
 
   bake-local-nodistrib:
     uses: ./.github/workflows/bake.yml
