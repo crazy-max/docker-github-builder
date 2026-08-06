@@ -208,6 +208,7 @@ jobs:
       includes: ${{ steps.set.outputs.includes }}
       metaImages: ${{ steps.set.outputs.metaImages }}
       sign: ${{ steps.set.outputs.sign }}
+      privateRepo: ${{ steps.set.outputs.privateRepo }}
       ghaCacheSign: ${{ steps.set.outputs.ghaCacheSign }}
     steps:
       -
