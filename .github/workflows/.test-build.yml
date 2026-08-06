@@ -43,28 +43,31 @@ jobs:
       output: image
       push: ${{ github.event_name != 'pull_request' }}
       sbom: true
+      registry-identities: |
+        - type: dockerhub
+          registry: docker.io
+          username: ${{ vars.DOCKERHUB_OIDC_USERNAME }}
+          connection_id: ${{ vars.DOCKERHUB_OIDC_CONNECTIONID }}
       meta-images: |
         docker.io/dockereng/github-builder-test
       meta-tags: |
         type=raw,value=build-ghbuilder-single-${{ github.run_id }}
-    secrets:
-      registry-auths: |
-        - registry: docker.io
-          username: ${{ vars.DOCKERPUBLICBOT_USERNAME }}
-          password: ${{ secrets.DOCKERPUBLICBOT_WRITE_PAT }}
 
   build-dockerhub-single-verify:
     uses: ./.github/workflows/verify.yml
     if: ${{ github.event_name != 'pull_request' }}
     needs:
       - build-dockerhub-single
+    permissions:
+      contents: read
+      id-token: write
     with:
       builder-outputs: ${{ toJSON(needs.build-dockerhub-single.outputs) }}
-    secrets:
-      registry-auths: |
-        - registry: docker.io
-          username: ${{ vars.DOCKERPUBLICBOT_USERNAME }}
-          password: ${{ secrets.DOCKERPUBLICBOT_WRITE_PAT }}
+      registry-identities: |
+        - type: dockerhub
+          registry: docker.io
+          username: ${{ vars.DOCKERHUB_OIDC_USERNAME }}
+          connection_id: ${{ vars.DOCKERHUB_OIDC_CONNECTIONID }}
 
   build-dockerhub-single-outputs:
     runs-on: ubuntu-24.04
@@ -146,28 +149,31 @@ jobs:
         linux/arm=ubuntu-24.04-arm
         linux/arm64=ubuntu-24.04-arm
       sbom: true
+      registry-identities: |
+        - type: dockerhub
+          registry: docker.io
+          username: ${{ vars.DOCKERHUB_OIDC_USERNAME }}
+          connection_id: ${{ vars.DOCKERHUB_OIDC_CONNECTIONID }}
       meta-images: |
         docker.io/dockereng/github-builder-test
       meta-tags: |
         type=raw,value=build-ghbuilder-${{ github.run_id }}
-    secrets:
-      registry-auths: |
-        - registry: docker.io
-          username: ${{ vars.DOCKERPUBLICBOT_USERNAME }}
-          password: ${{ secrets.DOCKERPUBLICBOT_WRITE_PAT }}
 
   build-dockerhub-verify:
     uses: ./.github/workflows/verify.yml
     if: ${{ github.event_name != 'pull_request' }}
     needs:
       - build-dockerhub
+    permissions:
+      contents: read
+      id-token: write
     with:
       builder-outputs: ${{ toJSON(needs.build-dockerhub.outputs) }}
-    secrets:
-      registry-auths: |
-        - registry: docker.io
-          username: ${{ vars.DOCKERPUBLICBOT_USERNAME }}
-          password: ${{ secrets.DOCKERPUBLICBOT_WRITE_PAT }}
+      registry-identities: |
+        - type: dockerhub
+          registry: docker.io
+          username: ${{ vars.DOCKERHUB_OIDC_USERNAME }}
+          connection_id: ${{ vars.DOCKERHUB_OIDC_CONNECTIONID }}
 
   build-dockerhub-outputs:
     runs-on: ubuntu-24.04
@@ -179,62 +185,6 @@ jobs:
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
           INPUT_BUILDER-OUTPUTS: ${{ toJSON(needs.build-dockerhub.outputs) }}
-        with:
-          script: |
-            const builderOutputs = JSON.parse(core.getInput('builder-outputs'));
-            core.info(JSON.stringify(builderOutputs, null, 2));
-
-  build-dockerhub-oidc:
-    uses: ./.github/workflows/build.yml
-    if: ${{ github.event_name != 'pull_request' }}
-    permissions:
-      contents: read
-      id-token: write
-    with:
-      job-name-prefix: build-dockerhub-oidc
-      build-args: |
-        VERSION={{meta.version}}
-      file: test/hello.Dockerfile
-      output: image
-      push: true
-      sbom: true
-      registry-identities: |
-        - type: dockerhub
-          registry: docker.io
-          username: ${{ vars.DOCKERHUB_OIDC_USERNAME }}
-          connection_id: ${{ vars.DOCKERHUB_OIDC_CONNECTIONID }}
-      meta-images: |
-        docker.io/dockereng/github-builder-test
-      meta-tags: |
-        type=raw,value=build-ghbuilder-oidc-${{ github.run_id }}
-
-  build-dockerhub-oidc-verify:
-    uses: ./.github/workflows/verify.yml
-    if: ${{ github.event_name != 'pull_request' }}
-    needs:
-      - build-dockerhub-oidc
-    permissions:
-      contents: read
-      id-token: write
-    with:
-      builder-outputs: ${{ toJSON(needs.build-dockerhub-oidc.outputs) }}
-      registry-identities: |
-        - type: dockerhub
-          registry: docker.io
-          username: ${{ vars.DOCKERHUB_OIDC_USERNAME }}
-          connection_id: ${{ vars.DOCKERHUB_OIDC_CONNECTIONID }}
-
-  build-dockerhub-oidc-outputs:
-    runs-on: ubuntu-24.04
-    if: ${{ github.event_name != 'pull_request' }}
-    needs:
-      - build-dockerhub-oidc
-    steps:
-      -
-        name: Builder outputs
-        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
-        env:
-          INPUT_BUILDER-OUTPUTS: ${{ toJSON(needs.build-dockerhub-oidc.outputs) }}
         with:
           script: |
             const builderOutputs = JSON.parse(core.getInput('builder-outputs'));
@@ -268,15 +218,15 @@ jobs:
       push: ${{ github.event_name != 'pull_request' }}
       sbom: true
       sign: false
+      registry-identities: |
+        - type: dockerhub
+          registry: docker.io
+          username: ${{ vars.DOCKERHUB_OIDC_USERNAME }}
+          connection_id: ${{ vars.DOCKERHUB_OIDC_CONNECTIONID }}
       meta-images: |
         docker.io/dockereng/github-builder-test
       meta-tags: |
         type=raw,value=build-ghbuilder-nosign--${{ github.run_id }}
-    secrets:
-      registry-auths: |
-        - registry: docker.io
-          username: ${{ vars.DOCKERPUBLICBOT_USERNAME }}
-          password: ${{ secrets.DOCKERPUBLICBOT_WRITE_PAT }}
 
   build-dockerhub-nosign-verify:
     uses: ./.github/workflows/verify.yml
@@ -285,11 +235,6 @@ jobs:
       - build-dockerhub-nosign
     with:
       builder-outputs: ${{ toJSON(needs.build-dockerhub-nosign.outputs) }}
-    secrets:
-      registry-auths: |
-        - registry: docker.io
-          username: ${{ vars.DOCKERPUBLICBOT_USERNAME }}
-          password: ${{ secrets.DOCKERPUBLICBOT_WRITE_PAT }}
 
   build-dockerhub-nosign-outputs:
     runs-on: ubuntu-24.04
@@ -376,30 +321,37 @@ jobs:
         docker.io/dockereng/github-builder-test
       meta-tags: |
         type=raw,value=${{ github.run_id }},prefix=build-ghcr-and-dockerhub-
+      registry-identities: |
+        - type: dockerhub
+          registry: docker.io
+          username: ${{ vars.DOCKERHUB_OIDC_USERNAME }}
+          connection_id: ${{ vars.DOCKERHUB_OIDC_CONNECTIONID }}
     secrets:
       registry-auths: |
         - registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-        - registry: docker.io
-          username: ${{ vars.DOCKERPUBLICBOT_USERNAME }}
-          password: ${{ secrets.DOCKERPUBLICBOT_WRITE_PAT }}
 
   build-ghcr-and-dockerhub-verify:
     uses: ./.github/workflows/verify.yml
     if: ${{ github.event_name != 'pull_request' }}
     needs:
       - build-ghcr-and-dockerhub
+    permissions:
+      contents: read
+      id-token: write
     with:
       builder-outputs: ${{ toJSON(needs.build-ghcr-and-dockerhub.outputs) }}
+      registry-identities: |
+        - type: dockerhub
+          registry: docker.io
+          username: ${{ vars.DOCKERHUB_OIDC_USERNAME }}
+          connection_id: ${{ vars.DOCKERHUB_OIDC_CONNECTIONID }}
     secrets:
       registry-auths: |
         - registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-        - registry: docker.io
-          username: ${{ vars.DOCKERPUBLICBOT_USERNAME }}
-          password: ${{ secrets.DOCKERPUBLICBOT_WRITE_PAT }}
 
   build-ghcr-and-dockerhub-outputs:
     runs-on: ubuntu-24.04
@@ -575,7 +527,7 @@ jobs:
       push: false
       registry-identities: |
         - type: dockerhub
-          username: dockereng
+          username: ${{ vars.DOCKERHUB_OIDC_USERNAME }}
           connection_id: ${{ vars.MISSING_DOCKERHUB_OIDC_CONNECTIONID }}
       meta-images: ghcr.io/docker/github-builder-test
       meta-tags: |
@@ -627,15 +579,15 @@ jobs:
       platforms: linux/amd64,linux/arm64
       push: ${{ github.event_name != 'pull_request' }}
       sbom: true
+      registry-identities: |
+        - type: dockerhub
+          registry: docker.io
+          username: ${{ vars.DOCKERHUB_OIDC_USERNAME }}
+          connection_id: ${{ vars.DOCKERHUB_OIDC_CONNECTIONID }}
       meta-images: |
         docker.io/dockereng/github-builder-test
       meta-tags: |
         type=raw,value=build-ghbuilder-nodistrib-${{ github.run_id }}
-    secrets:
-      registry-auths: |
-        - registry: docker.io
-          username: ${{ vars.DOCKERPUBLICBOT_USERNAME }}
-          password: ${{ secrets.DOCKERPUBLICBOT_WRITE_PAT }}
 
   build-local-nodistrib:
     uses: ./.github/workflows/build.yml
