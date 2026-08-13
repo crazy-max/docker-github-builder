@@ -599,13 +599,20 @@ jobs:
       contents: read
       id-token: write
     with:
-      setup-qemu: true
-      artifact-upload: false
       context: test
-      output: local
-      target: go
+      output: image
+      push: false
+      target: vars
       vars: |
         XX_VERSION=1.9.0
+        DOCKER_METADATA_OUTPUT_VERSION=caller-version
+      meta-images: example/app
+      meta-tags: |
+        type=raw,value=vars-one
+        type=raw,value=vars-two
+      meta-labels: |
+        org.example.vars.one=one
+        org.example.vars.two=two
 
   bake-auth-scope:
     uses: ./.github/workflows/bake.yml
