@@ -337,7 +337,7 @@ jobs:
             const inpArtifactUpload = core.getBooleanInput('artifact-upload');
             const inpJobNamePrefix = core.getInput('job-name-prefix');
             const inpContext = core.getInput('context');
-            const inpVars = Util.getInputList('vars');
+            const inpVars = Util.getInputList('vars', {ignoreComma: true, quote: false});
             const inpFiles = Util.getInputList('files');
             const inpOutput = core.getInput('output');
             const inpPush = core.getBooleanInput('push');
@@ -471,23 +471,26 @@ jobs:
               core.info(bakeSource);
             });
             
-            const envs = Object.assign({},
-              inpVars ? inpVars.reduce((acc, curr) => {
-                const idx = curr.indexOf('=');
-                if (idx !== -1) {
-                  acc[curr.substring(0, idx)] = curr.substring(idx + 1);
-                }
-                return acc;
-              }, {}) : {},
-              {
-                BUILDKIT_MULTI_PLATFORM: '1',
-                BUILDX_BAKE_GIT_AUTH_TOKEN: inpGitHubToken
-              }
-            );
+            // Preserve GitHub's default workflow context variables without allowing arbitrary runner env lookup in Bake.
+            const defaultBakeVars = Object.keys(process.env).filter(key => key.startsWith('GITHUB_') || key.startsWith('RUNNER_')).sort().map(key => `${key}=${process.env[key] || ''}`);
+            const bakeVars = [...defaultBakeVars, ...inpVars];
+            const bakeVarKeys = bakeVars.map(value => {
+              const idx = value.indexOf('=');
+              return idx === -1 ? '<invalid>' : value.substring(0, idx);
+            });
+            await core.group(`Set bake vars`, async () => {
+              core.info(JSON.stringify(bakeVarKeys.sort(), null, 2));
+            });
+            
+            const envs = {
+              BUILDKIT_MULTI_PLATFORM: '1',
+              BUILDX_BAKE_DISABLE_VARS_ENV_LOOKUP: '1',
+              BUILDX_BAKE_GIT_AUTH_TOKEN: inpGitHubToken
+            };
             await core.group(`Set envs`, async () => {
               core.info(JSON.stringify(Object.keys(envs).sort(), null, 2));
             });
-
+            
             const metaImages = inpMetaImages.map(image => image.toLowerCase());
             await core.group(`Set metaImages output`, async () => {
               core.info(JSON.stringify(metaImages, null, 2));
@@ -504,7 +507,8 @@ jobs:
                   overrides: inpSet,
                   sbom: inpSbom ? `generator=${inpSbomImage}` : 'false',
                   source: bakeSource,
-                  targets: [inpTarget]
+                  targets: [inpTarget],
+                  vars: bakeVars
                 }, {
                   env: Object.keys(envs).length > 0 ? envs : undefined
                 });
@@ -889,7 +893,7 @@ jobs:
             const inpSbom = core.getBooleanInput('sbom');
             const inpSet = Util.getInputList('set', {ignoreComma: true, quote: false});
             const inpTarget = core.getInput('target');
-            const inpVars = Util.getInputList('vars');
+            const inpVars = Util.getInputList('vars', {ignoreComma: true, quote: false});
             const inpMetaImages = core.getMultilineInput('meta-images');
             const inpMetaVersion = core.getInput('meta-version');
             const inpMetaTags = core.getMultilineInput('meta-tags');
@@ -983,25 +987,31 @@ jobs:
               return;
             }
 
-            const envs = Object.assign({},
-              inpVars ? inpVars.reduce((acc, curr) => {
-                const idx = curr.indexOf('=');
-                if (idx !== -1) {
-                  acc[curr.substring(0, idx)] = curr.substring(idx + 1);
-                }
-                return acc;
-              }, {}) : {},
-              {
-                BUILDKIT_MULTI_PLATFORM: '1',
-                BUILDX_BAKE_GIT_AUTH_TOKEN: inpGitHubToken
-              }
-            );
+            // Preserve GitHub's default workflow context variables without allowing arbitrary runner env lookup in Bake.
+            const defaultBakeVars = Object.keys(process.env).filter(key => key.startsWith('GITHUB_') || key.startsWith('RUNNER_')).sort().map(key => `${key}=${process.env[key] || ''}`);
+            const bakeVars = [...defaultBakeVars, ...inpVars];
+            const bakeVarKeys = bakeVars.map(value => {
+              const idx = value.indexOf('=');
+              return idx === -1 ? '<invalid>' : value.substring(0, idx);
+            });
+            await core.group(`Set bake vars`, async () => {
+              core.info(JSON.stringify(bakeVarKeys.sort(), null, 2));
+              core.setOutput('vars', bakeVars.join(os.EOL));
+            });
+
+            const envs = {
+              BUILDKIT_MULTI_PLATFORM: '1',
+              BUILDX_BAKE_DISABLE_VARS_ENV_LOOKUP: '1',
+              BUILDX_BAKE_GIT_AUTH_TOKEN: inpGitHubToken
+            };
+
             const secretOverrides = [];
             buildSecrets.forEach(({target, id, secret}, index) => {
               const envName = toBuildSecretEnvName(id, index);
               envs[envName] = secret;
               secretOverrides.push(`${target}.secret.${id}=env=${envName}`);
             });
+
             await core.group(`Set envs`, async () => {
               core.info(JSON.stringify(Object.keys(envs).sort(), null, 2));
               Object.entries(envs).forEach(([key, value]) => {
@@ -1133,6 +1143,7 @@ jobs:
           targets: ${{ steps.prepare.outputs.target }}
           sbom: ${{ steps.prepare.outputs.sbom }}
           set: ${{ steps.prepare.outputs.overrides }}
+          vars: ${{ steps.prepare.outputs.vars }}
       -
         name: Get image digest
         id: get-image-digest

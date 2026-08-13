@@ -367,13 +367,19 @@ jobs:
 | `meta-annotations`        | List   |                                       | [List of custom annotations](https://github.com/docker/metadata-action?tab=readme-ov-file#overwrite-labels-and-annotations)                                                                                                                                                                          |
 | `meta-flavor`             | List   |                                       | [Flavor](https://github.com/docker/metadata-action?tab=readme-ov-file#flavor-input) defines a global behavior for `meta-tags`                                                                                                                                                                        |
 
+> [!NOTE]
+> The `vars` input is passed to Buildx as explicit Bake variables. Ambient
+> environment lookup for Bake variables is disabled, except that step environment
+> variables with `GITHUB_` or `RUNNER_` prefixes are forwarded as explicit vars
+> for workflows that declare them in their Bake definition.
+
 ### Secrets
 
-| Name             | Default               | Description                                                                    |
-|------------------|-----------------------|--------------------------------------------------------------------------------|
-| `registry-auths` |                       | Raw authentication to registries, defined as YAML objects (for `image` output) |
+| Name             | Default               | Description                                                                         |
+|------------------|-----------------------|-------------------------------------------------------------------------------------|
+| `registry-auths` |                       | Raw authentication to registries, defined as YAML objects (for `image` output)      |
 | `build-secrets`  |                       | YAML object mapping BuildKit secret IDs, optionally target-scoped, to secret values |
-| `github-token`   | `${{ github.token }}` | GitHub Token used to authenticate against the repository for Git context       |
+| `github-token`   | `${{ github.token }}` | GitHub Token used to authenticate against the repository for Git context            |
 
 ### Outputs
 
