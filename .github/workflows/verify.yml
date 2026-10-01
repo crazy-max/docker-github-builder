@@ -127,6 +127,8 @@ jobs:
         name: Login to Amazon ECR
         if: ${{ steps.vars.outputs.signed == 'true' && steps.vars.outputs.output-type == 'image' && needs.registry-identities.outputs.aws-ecr-enabled == 'true' }}
         uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        env:
+          AWS_ACCOUNT_IDS: ${{ needs.registry-identities.outputs.aws-ecr-account-ids }}
         with:
           registry-auth: |
             - registry: ${{ needs.registry-identities.outputs.aws-ecr-registry }}

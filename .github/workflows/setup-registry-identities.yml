@@ -25,6 +25,9 @@ on:
       aws-ecr-region:
         description: "AWS region to use for ECR authentication"
         value: ${{ jobs.setup-registry-identities.outputs.aws-ecr-region }}
+      aws-ecr-account-ids:
+        description: "Additional AWS account IDs to authenticate against"
+        value: ${{ jobs.setup-registry-identities.outputs.aws-ecr-account-ids }}
       gcp-wif-enabled:
         description: "Whether a GCP Workload Identity Federation registry identity was configured"
         value: ${{ jobs.setup-registry-identities.outputs.gcp-wif-enabled }}
@@ -74,6 +77,7 @@ jobs:
       aws-ecr-registry: ${{ steps.validate.outputs.aws-ecr-registry }}
       aws-ecr-role-to-assume: ${{ steps.validate.outputs.aws-ecr-role-to-assume }}
       aws-ecr-region: ${{ steps.validate.outputs.aws-ecr-region }}
+      aws-ecr-account-ids: ${{ steps.validate.outputs.aws-ecr-account-ids }}
       gcp-wif-enabled: ${{ steps.validate.outputs.gcp-wif-enabled }}
       gcp-wif-registry: ${{ steps.validate.outputs.gcp-wif-registry }}
       gcp-wif-workload-identity-provider: ${{ steps.validate.outputs.gcp-wif-workload-identity-provider }}
@@ -136,6 +140,7 @@ jobs:
               core.setOutput('aws-ecr-registry', '');
               core.setOutput('aws-ecr-role-to-assume', '');
               core.setOutput('aws-ecr-region', '');
+              core.setOutput('aws-ecr-account-ids', '');
               core.setOutput('gcp-wif-enabled', 'false');
               core.setOutput('gcp-wif-registry', '');
               core.setOutput('gcp-wif-workload-identity-provider', '');
@@ -179,6 +184,7 @@ jobs:
               core.setOutput('aws-ecr-registry', awsEcr?.registry || '');
               core.setOutput('aws-ecr-role-to-assume', awsEcr?.roleToAssume || '');
               core.setOutput('aws-ecr-region', awsEcr?.region || '');
+              core.setOutput('aws-ecr-account-ids', awsEcr?.accountIDs || '');
               core.setOutput('gcp-wif-enabled', gcpWif ? 'true' : 'false');
               core.setOutput('gcp-wif-registry', gcpWif?.registry || '');
               core.setOutput('gcp-wif-workload-identity-provider', gcpWif?.workloadIdentityProvider || '');
