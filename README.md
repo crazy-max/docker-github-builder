@@ -23,6 +23,8 @@ ___
     * [Docker Hub OIDC](#docker-hub-oidc)
     * [AWS ECR](#aws-ecr)
     * [Google Artifact Registry](#google-artifact-registry)
+    * [Azure Container Registry](#azure-container-registry)
+    * [Chainguard](#chainguard)
   * [Runner mapping](#runner-mapping)
   * [Metadata templates](#metadata-templates)
 
@@ -566,6 +568,77 @@ that `docker/login-action` should log in to, such as `us-docker.pkg.dev`, not
 the full repository path. The workflow requests an access token from
 `google-github-actions/auth` and passes it directly to `docker/login-action`
 with the `oauth2accesstoken` username inside the same job.
+
+#### Azure Container Registry
+
+Azure Container Registry authentication is configured with `type: azure-acr`.
+Grant `id-token: write` and configure a federated credential for the GitHub
+workflow on the Azure identity. The identity also needs permission to pull or
+push images in the registry:
+
+```yaml
+jobs:
+  build:
+    uses: docker/github-builder/.github/workflows/build.yml@v1
+    permissions:
+      contents: read
+      id-token: write
+    with:
+      output: image
+      push: true
+      meta-images: myregistry.azurecr.io/my-image
+      registry-identities: |
+        - type: azure-acr
+          registry: myregistry.azurecr.io
+          client_id: 00000000-0000-0000-0000-000000000000
+          tenant_id: 00000000-0000-0000-0000-000000000000
+          subscription_id: 00000000-0000-0000-0000-000000000000
+```
+
+| Name              | Type   | Required | Description                                        |
+|-------------------|--------|----------|----------------------------------------------------|
+| `type`            | String | Yes      | Must be `azure-acr`.                               |
+| `registry`        | String | Yes      | ACR login server, such as `myregistry.azurecr.io`. |
+| `client_id`       | String | Yes      | Federated identity client ID.                      |
+| `tenant_id`       | String | Yes      | Azure tenant ID.                                   |
+| `subscription_id` | String | Yes      | Azure subscription ID.                             |
+
+The `registry` value must be an ACR login server ending in `.azurecr.io`; the
+workflow removes that suffix to obtain the name for `az acr login`. It logs in
+with `azure/login` first, inside each job that needs the registry. No client
+secret crosses the reusable workflow boundary.
+
+#### Chainguard
+
+Chainguard authentication is configured with `type: chainguard`. Grant
+`id-token: write` and configure the identity to trust the GitHub workflow:
+
+```yaml
+jobs:
+  bake:
+    uses: docker/github-builder/.github/workflows/bake.yml@v1
+    permissions:
+      contents: read
+      id-token: write
+    with:
+      output: image
+      push: true
+      meta-images: cgr.dev/my-organization/my-image
+      registry-identities: |
+        - type: chainguard
+          identity: my-organization/my-identity
+```
+
+| Name             | Type   | Required | Description                                      |
+|------------------|--------|----------|--------------------------------------------------|
+| `type`           | String | Yes      | Must be `chainguard`.                            |
+| `identity`       | String | Yes      | Chainguard identity to assume.                   |
+| `apk_host`       | String | No       | APK host. Defaults to `apk.cgr.dev`.             |
+| `libraries_host` | String | No       | Libraries host. Defaults to `libraries.cgr.dev`. |
+
+The workflow runs `chainguard-dev/setup-chainctl` inside each job that needs
+registry access. The identity must be authorized for the configured APK and
+Libraries hosts as well as the target registry.
 
 ### Runner mapping
 

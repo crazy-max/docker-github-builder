@@ -52,6 +52,33 @@ on:
       dockerhub-oidc-connection-id:
         description: "Docker Hub OIDC connection ID"
         value: ${{ jobs.setup-registry-identities.outputs.dockerhub-oidc-connection-id }}
+      azure-acr-enabled:
+        description: "Whether an Azure ACR registry identity was configured"
+        value: ${{ jobs.setup-registry-identities.outputs.azure-acr-enabled }}
+      azure-acr-registry:
+        description: "Azure Container Registry host"
+        value: ${{ jobs.setup-registry-identities.outputs.azure-acr-registry }}
+      azure-acr-client-id:
+        description: "Azure federated identity client ID"
+        value: ${{ jobs.setup-registry-identities.outputs.azure-acr-client-id }}
+      azure-acr-tenant-id:
+        description: "Azure tenant ID"
+        value: ${{ jobs.setup-registry-identities.outputs.azure-acr-tenant-id }}
+      azure-acr-subscription-id:
+        description: "Azure subscription ID"
+        value: ${{ jobs.setup-registry-identities.outputs.azure-acr-subscription-id }}
+      chainguard-enabled:
+        description: "Whether a Chainguard registry identity was configured"
+        value: ${{ jobs.setup-registry-identities.outputs.chainguard-enabled }}
+      chainguard-identity:
+        description: "Chainguard identity to assume"
+        value: ${{ jobs.setup-registry-identities.outputs.chainguard-identity }}
+      chainguard-apk-host:
+        description: "Chainguard APK host"
+        value: ${{ jobs.setup-registry-identities.outputs.chainguard-apk-host }}
+      chainguard-libraries-host:
+        description: "Chainguard Libraries host"
+        value: ${{ jobs.setup-registry-identities.outputs.chainguard-libraries-host }}
 
 env:
   RUNTIME_MODULE: "@docker/github-builder-runtime@0.102.0"
@@ -83,6 +110,15 @@ jobs:
       dockerhub-oidc-registry: ${{ steps.validate.outputs.dockerhub-oidc-registry }}
       dockerhub-oidc-username: ${{ steps.validate.outputs.dockerhub-oidc-username }}
       dockerhub-oidc-connection-id: ${{ steps.validate.outputs.dockerhub-oidc-connection-id }}
+      azure-acr-enabled: ${{ steps.validate.outputs.azure-acr-enabled }}
+      azure-acr-registry: ${{ steps.validate.outputs.azure-acr-registry }}
+      azure-acr-client-id: ${{ steps.validate.outputs.azure-acr-client-id }}
+      azure-acr-tenant-id: ${{ steps.validate.outputs.azure-acr-tenant-id }}
+      azure-acr-subscription-id: ${{ steps.validate.outputs.azure-acr-subscription-id }}
+      chainguard-enabled: ${{ steps.validate.outputs.chainguard-enabled }}
+      chainguard-identity: ${{ steps.validate.outputs.chainguard-identity }}
+      chainguard-apk-host: ${{ steps.validate.outputs.chainguard-apk-host }}
+      chainguard-libraries-host: ${{ steps.validate.outputs.chainguard-libraries-host }}
     steps:
       -
         name: Install dependencies
@@ -145,6 +181,15 @@ jobs:
               core.setOutput('dockerhub-oidc-registry', '');
               core.setOutput('dockerhub-oidc-username', '');
               core.setOutput('dockerhub-oidc-connection-id', '');
+              core.setOutput('azure-acr-enabled', 'false');
+              core.setOutput('azure-acr-registry', '');
+              core.setOutput('azure-acr-client-id', '');
+              core.setOutput('azure-acr-tenant-id', '');
+              core.setOutput('azure-acr-subscription-id', '');
+              core.setOutput('chainguard-enabled', 'false');
+              core.setOutput('chainguard-identity', '');
+              core.setOutput('chainguard-apk-host', '');
+              core.setOutput('chainguard-libraries-host', '');
             };
 
             const registryLogin = core.getBooleanInput('registry-login');
@@ -164,7 +209,7 @@ jobs:
             const { RegistryIdentities } = require('@docker/github-builder-runtime/lib/github-builder/registry-identities');
 
             try {
-              const { awsEcr, gcpWif, dockerhubOidc } = RegistryIdentities.parse(registryIdentities);
+              const { awsEcr, gcpWif, dockerhubOidc, azureAcr, chainguard } = RegistryIdentities.parse(registryIdentities);
               if (awsEcr) {
                 core.info(`Configured aws-ecr registry identity for ${awsEcr.registry}`);
               }
@@ -173,6 +218,12 @@ jobs:
               }
               if (dockerhubOidc) {
                 core.info(`Configured dockerhub registry identity for ${dockerhubOidc.registry}`);
+              }
+              if (azureAcr) {
+                core.info(`Configured azure-acr registry identity for ${azureAcr.registry}`);
+              }
+              if (chainguard) {
+                core.info(`Configured chainguard registry identity ${chainguard.identity}`);
               }
 
               core.setOutput('aws-ecr-enabled', awsEcr ? 'true' : 'false');
@@ -188,6 +239,15 @@ jobs:
               core.setOutput('dockerhub-oidc-registry', dockerhubOidc?.registry || '');
               core.setOutput('dockerhub-oidc-username', dockerhubOidc?.username || '');
               core.setOutput('dockerhub-oidc-connection-id', dockerhubOidc?.connectionID || '');
+              core.setOutput('azure-acr-enabled', azureAcr ? 'true' : 'false');
+              core.setOutput('azure-acr-registry', azureAcr?.registry || '');
+              core.setOutput('azure-acr-client-id', azureAcr?.clientId || '');
+              core.setOutput('azure-acr-tenant-id', azureAcr?.tenantId || '');
+              core.setOutput('azure-acr-subscription-id', azureAcr?.subscriptionId || '');
+              core.setOutput('chainguard-enabled', chainguard ? 'true' : 'false');
+              core.setOutput('chainguard-identity', chainguard?.identity || '');
+              core.setOutput('chainguard-apk-host', chainguard?.apkHost || '');
+              core.setOutput('chainguard-libraries-host', chainguard?.librariesHost || '');
             } catch (error) {
               core.setFailed(error.message || error);
             }
