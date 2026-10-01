@@ -516,6 +516,7 @@ jobs:
           registry: 123456789100.dkr.ecr.us-east-1.amazonaws.com
           role-to-assume: arn:aws:iam::123456789100:role/my-github-actions-role
           region: us-east-1
+          account_ids: 123456789101,123456789102
 ```
 
 | Name             | Type   | Required | Description                                                                                                                     |
@@ -524,10 +525,16 @@ jobs:
 | `registry`       | String | Yes      | Registry server passed to `docker/login-action`, such as `public.ecr.aws` for public ECR or a private ECR host for private ECR. |
 | `role-to-assume` | String | Yes      | IAM role ARN assumed through GitHub OIDC.                                                                                       |
 | `region`         | String | Yes      | AWS region passed to `aws-actions/configure-aws-credentials` when assuming the role. Use `us-east-1` for ECR Public.            |
+| `account_ids`    | String | No       | Comma-separated additional private ECR account IDs to log in to with the assumed role.                                          |
 
 The `registry` value is required for AWS ECR. Use the registry server that
 `docker/login-action` should log in to, such as `public.ecr.aws` for public ECR
 or `123456789100.dkr.ecr.us-east-1.amazonaws.com` for private ECR.
+
+The account ID in the private ECR registry is always included. Set `account_ids`
+to log in to additional accounts in the same region. The assumed role must have
+permission to retrieve authorization tokens for those accounts. This setting
+does not apply to ECR Public.
 
 #### Google Artifact Registry
 
