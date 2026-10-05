@@ -538,12 +538,13 @@ jobs:
           connection_id: 123e4567-e89b-42d3-a456-426614174000
 ```
 
-| Name            | Type   | Required | Description                                                                 |
-|-----------------|--------|----------|-----------------------------------------------------------------------------|
-| `type`          | String | Yes      | Registry identity provider type. Must be `dockerhub`.                       |
-| `registry`      | String | No       | Registry hostname passed to `docker/login-action`. Defaults to `docker.io`. |
-| `username`      | String | Yes      | Docker Hub username or organization passed to `docker/login-action`.        |
-| `connection_id` | String | Yes      | Docker Hub OIDC connection ID passed to `docker/login-action` in each job.  |
+| Name            | Type   | Required | Description                                                                                                                       |
+|-----------------|--------|----------|-----------------------------------------------------------------------------------------------------------------------------------|
+| `type`          | String | Yes      | Registry identity provider type. Must be `dockerhub`.                                                                             |
+| `registry`      | String | No       | Registry hostname passed to `docker/login-action`. Defaults to `docker.io`.                                                       |
+| `username`      | String | Yes      | Docker Hub username or organization passed to `docker/login-action`.                                                              |
+| `connection_id` | String | Yes      | Docker Hub OIDC connection ID passed to `docker/login-action` in each job.                                                        |
+| `scope`         | String | No       | [Authentication scope](https://github.com/docker/login-action#set-scopes-for-the-authentication-token) for `docker/login-action`. |
 
 The workflow mints the Docker Hub access token inside each reusable workflow
 job that needs Docker Hub registry access. The token is not accepted as an

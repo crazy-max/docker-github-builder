@@ -768,6 +768,7 @@ jobs:
           registry-auth: |
             - registry: ${{ needs.registry-identities.outputs.dockerhub-oidc-registry }}
               username: ${{ needs.registry-identities.outputs.dockerhub-oidc-username }}
+              scope: ${{ needs.registry-identities.outputs.dockerhub-oidc-scope }}
       -
         name: Authenticate to Azure
         if: ${{ needs.registry-identities.outputs.azure-acr-enabled == 'true' }}
@@ -1243,6 +1244,7 @@ jobs:
           registry-auth: |
             - registry: ${{ needs.registry-identities.outputs.dockerhub-oidc-registry }}
               username: ${{ needs.registry-identities.outputs.dockerhub-oidc-username }}
+              scope: ${{ needs.registry-identities.outputs.dockerhub-oidc-scope }}
       -
         name: Authenticate to Azure
         if: ${{ inputs.push && inputs.output == 'image' && needs.registry-identities.outputs.azure-acr-enabled == 'true' }}
