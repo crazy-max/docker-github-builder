@@ -27,6 +27,7 @@ ___
     * [Azure Container Registry](#azure-container-registry)
     * [Chainguard](#chainguard)
   * [Runner mapping](#runner-mapping)
+  * [Registry login](#registry-login)
   * [Metadata templates](#metadata-templates)
 
 ## Overview
@@ -244,6 +245,7 @@ jobs:
 | `platforms`               | List/CSV |                                       | List of [target platforms](https://docs.docker.com/engine/reference/commandline/buildx_build/#platform) to build                                                                                                                                                                                               |
 | `push`                    | Bool     | `false`                               | [Push](https://docs.docker.com/engine/reference/commandline/buildx_build/#push) image to the registry (for `image` output)                                                                                                                                                                                     |
 | `registry-identities`     | YAML     |                                       | Keyless registry identity configuration. See [Registry identities](#registry-identities).                                                                                                                                                                                                                      |
+| `registry-login`          | String   | `auto`                                | [Login to registry](#registry-login) before build (one of `auto`, `true` or `false`)                                                                                                                                                                                                                           |
 | `sbom`                    | Bool     | `false`                               | Generate [SBOM](https://docs.docker.com/build/attestations/sbom/) attestation for the build                                                                                                                                                                                                                    |
 | `shm-size`                | String   |                                       | Size of [`/dev/shm`](https://docs.docker.com/engine/reference/commandline/buildx_build/#shm-size) (e.g., `2g`)                                                                                                                                                                                                 |
 | `sign`                    | String   | `auto`                                | Sign attestation manifest for `image` output or artifacts for `local` output, can be one of `auto`, `true` or `false`. The `auto` mode will enable signing if `push` is enabled for pushing the `image` or if `artifact-upload` is enabled for uploading the `local` build output as GitHub Artifact           |
@@ -262,7 +264,7 @@ jobs:
 
 | Name             | Default               | Description                                                                    |
 |------------------|-----------------------|--------------------------------------------------------------------------------|
-| `registry-auths` |                       | Raw authentication to registries, defined as YAML objects (for `image` output) |
+| `registry-auths` |                       | Raw authentication to registries, defined as YAML objects |
 | `build-secrets`  |                       | YAML object mapping BuildKit secret IDs to secret values                       |
 | `github-token`   | `${{ github.token }}` | GitHub Token used to authenticate against the repository for Git context       |
 
@@ -358,6 +360,7 @@ jobs:
 | `output`                  | String |                                       | Build output destination (one of [`image`](https://docs.docker.com/build/exporters/image-registry/) or [`local`](https://docs.docker.com/build/exporters/local-tar/)).                                                                                                                               |
 | `push`                    | Bool   | `false`                               | Push image to the registry (for `image` output)                                                                                                                                                                                                                                                      |
 | `registry-identities`     | YAML   |                                       | Keyless registry identity configuration. See [Registry identities](#registry-identities).                                                                                                                                                                                                            |
+| `registry-login`          | String | `auto`                                | [Login to registry](#registry-login) before build (one of `auto`, `true` or `false`)                                                                                                                                                                                                                 |
 | `sbom`                    | Bool   | `false`                               | Generate [SBOM](https://docs.docker.com/build/attestations/sbom/) attestation for the build                                                                                                                                                                                                          |
 | `set`                     | List   |                                       | List of [target values to override](https://docs.docker.com/engine/reference/commandline/buildx_bake/#set) (e.g., `targetpattern.key=value`)                                                                                                                                                         |
 | `sign`                    | String | `auto`                                | Sign attestation manifest for `image` output or artifacts for `local` output, can be one of `auto`, `true` or `false`. The `auto` mode will enable signing if `push` is enabled for pushing the `image` or if `artifact-upload` is enabled for uploading the `local` build output as GitHub Artifact |
@@ -376,7 +379,7 @@ jobs:
 
 | Name             | Default               | Description                                                                             |
 |------------------|-----------------------|-----------------------------------------------------------------------------------------|
-| `registry-auths` |                       | Raw authentication to registries, defined as YAML objects (for `image` output)          |
+| `registry-auths` |                       | Raw authentication to registries, defined as YAML objects          |
 | `build-secrets`  |                       | YAML object mapping BuildKit secret IDs to values, with optional nested target mappings |
 | `github-token`   | `${{ github.token }}` | GitHub Token used to authenticate against the repository for Git context                |
 
@@ -736,6 +739,21 @@ runner: |
 
 For example, `linux` matches all Linux platforms, `linux/arm` matches variants
 such as `linux/arm/v7`, and `linux/arm64` is separate from `linux/arm`.
+
+### Registry login
+
+The `registry-login` input controls whether the workflows run a registry login
+before the build step. `auto` preserves the existing behavior and enables login
+only when `output=image` and `push=true`.
+
+When `registry-login=true`, the workflow always attempts pre-build login. If
+credentials resolve to empty values, for example on forked pull requests where
+secrets are not exposed, login fails. Gate the input at the caller side for
+fork-safe workflows:
+
+```yaml
+registry-login: ${{ github.event_name != 'pull_request' || !github.event.pull_request.head.repo.fork }}
+```
 
 ### Metadata templates
 
