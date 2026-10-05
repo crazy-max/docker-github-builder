@@ -55,6 +55,9 @@ on:
       dockerhub-oidc-connection-id:
         description: "Docker Hub OIDC connection ID"
         value: ${{ jobs.setup-registry-identities.outputs.dockerhub-oidc-connection-id }}
+      dockerhub-oidc-scope:
+        description: "Docker Hub authentication scope"
+        value: ${{ jobs.setup-registry-identities.outputs.dockerhub-oidc-scope }}
       azure-acr-enabled:
         description: "Whether an Azure ACR registry identity was configured"
         value: ${{ jobs.setup-registry-identities.outputs.azure-acr-enabled }}
@@ -114,6 +117,7 @@ jobs:
       dockerhub-oidc-registry: ${{ steps.validate.outputs.dockerhub-oidc-registry }}
       dockerhub-oidc-username: ${{ steps.validate.outputs.dockerhub-oidc-username }}
       dockerhub-oidc-connection-id: ${{ steps.validate.outputs.dockerhub-oidc-connection-id }}
+      dockerhub-oidc-scope: ${{ steps.validate.outputs.dockerhub-oidc-scope }}
       azure-acr-enabled: ${{ steps.validate.outputs.azure-acr-enabled }}
       azure-acr-registry: ${{ steps.validate.outputs.azure-acr-registry }}
       azure-acr-client-id: ${{ steps.validate.outputs.azure-acr-client-id }}
@@ -186,6 +190,7 @@ jobs:
               core.setOutput('dockerhub-oidc-registry', '');
               core.setOutput('dockerhub-oidc-username', '');
               core.setOutput('dockerhub-oidc-connection-id', '');
+              core.setOutput('dockerhub-oidc-scope', '');
               core.setOutput('azure-acr-enabled', 'false');
               core.setOutput('azure-acr-registry', '');
               core.setOutput('azure-acr-client-id', '');
@@ -245,6 +250,7 @@ jobs:
               core.setOutput('dockerhub-oidc-registry', dockerhubOidc?.registry || '');
               core.setOutput('dockerhub-oidc-username', dockerhubOidc?.username || '');
               core.setOutput('dockerhub-oidc-connection-id', dockerhubOidc?.connectionID || '');
+              core.setOutput('dockerhub-oidc-scope', dockerhubOidc?.scope || '');
               core.setOutput('azure-acr-enabled', azureAcr ? 'true' : 'false');
               core.setOutput('azure-acr-registry', azureAcr?.registry || '');
               core.setOutput('azure-acr-client-id', azureAcr?.clientId || '');

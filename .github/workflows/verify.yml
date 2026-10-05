@@ -163,6 +163,7 @@ jobs:
           registry-auth: |
             - registry: ${{ needs.registry-identities.outputs.dockerhub-oidc-registry }}
               username: ${{ needs.registry-identities.outputs.dockerhub-oidc-username }}
+              scope: ${{ needs.registry-identities.outputs.dockerhub-oidc-scope }}
       -
         name: Authenticate to Azure
         if: ${{ steps.vars.outputs.signed == 'true' && steps.vars.outputs.output-type == 'image' && needs.registry-identities.outputs.azure-acr-enabled == 'true' }}
