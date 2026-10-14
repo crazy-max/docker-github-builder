@@ -45,6 +45,11 @@ on:
         description: "Duration after which artifact will expire in days. 0 means using default retention."
         required: false
         default: 0
+      build-summary:
+        type: boolean
+        description: "Generate a build summary"
+        required: false
+        default: true
       annotations:
         type: string
         description: "List of annotations to set to the image"
@@ -450,6 +455,7 @@ jobs:
       - registry-identities
       - prepare
     env:
+      DOCKER_BUILD_SUMMARY: ${{ inputs.build-summary }}
       REGISTRY_AUTHS_PRESENT: ${{ secrets.registry-auths != '' }}
     strategy:
       fail-fast: ${{ inputs.fail-fast }}
