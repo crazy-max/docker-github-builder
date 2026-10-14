@@ -233,6 +233,7 @@ jobs:
 | `artifact-name`           | String   | `docker-github-builder-assets`        | Name of the uploaded GitHub artifact (for `local` output)                                                                                                                                                                                                                                                      |
 | `artifact-upload`         | Bool     | `false`                               | Upload build output GitHub artifact (for `local` output)                                                                                                                                                                                                                                                       |
 | `artifact-retention-days` | Number   | `0`                                   | Duration after which artifact will expire in days. `0` means using default retention                                                                                                                                                                                                                           |
+| `build-summary`           | Bool     | `true`                                | Generate a [build summary](https://docs.docker.com/build/ci/github-actions/build-summary/)                                                                                                                                                                                                                     |
 | `annotations`             | List     |                                       | List of annotations to set to the image (for `image` output)                                                                                                                                                                                                                                                   |
 | `build-args`              | List     | `auto`                                | List of [build-time variables](https://docs.docker.com/engine/reference/commandline/buildx_build/#build-arg). If you want to set a build-arg through an environment variable, use the `envs` input                                                                                                             |
 | `cache`                   | Bool     | `false`                               | Enable [GitHub Actions cache](https://docs.docker.com/build/cache/backends/gha/) exporter                                                                                                                                                                                                                      |
@@ -262,11 +263,11 @@ jobs:
 
 ### Secrets
 
-| Name             | Default               | Description                                                                    |
-|------------------|-----------------------|--------------------------------------------------------------------------------|
-| `registry-auths` |                       | Raw authentication to registries, defined as YAML objects |
-| `build-secrets`  |                       | YAML object mapping BuildKit secret IDs to secret values                       |
-| `github-token`   | `${{ github.token }}` | GitHub Token used to authenticate against the repository for Git context       |
+| Name             | Default               | Description                                                              |
+|------------------|-----------------------|--------------------------------------------------------------------------|
+| `registry-auths` |                       | Raw authentication to registries, defined as YAML objects                |
+| `build-secrets`  |                       | YAML object mapping BuildKit secret IDs to secret values                 |
+| `github-token`   | `${{ github.token }}` | GitHub Token used to authenticate against the repository for Git context |
 
 ### Outputs
 
@@ -352,6 +353,7 @@ jobs:
 | `artifact-name`           | String | `docker-github-builder-assets`        | Name of the uploaded GitHub artifact (for `local` output)                                                                                                                                                                                                                                            |
 | `artifact-upload`         | Bool   | `false`                               | Upload build output GitHub artifact (for `local` output)                                                                                                                                                                                                                                             |
 | `artifact-retention-days` | Number | `0`                                   | Duration after which artifact will expire in days. `0` means using default retention                                                                                                                                                                                                                 |
+| `build-summary`           | Bool   | `true`                                | Generate a [build summary](https://docs.docker.com/build/ci/github-actions/build-summary/)                                                                                                                                                                                                           |
 | `cache`                   | Bool   | `false`                               | Enable [GitHub Actions cache](https://docs.docker.com/build/cache/backends/gha/) exporter                                                                                                                                                                                                            |
 | `cache-scope`             | String | target name or `buildkit`             | Which [scope cache object belongs to](https://docs.docker.com/build/cache/backends/gha/#scope) if `cache` is enabled. This is the cache blob prefix name used when pushing cache to GitHub Actions cache backend                                                                                     |
 | `cache-mode`              | String | `min`                                 | [Cache layers to export](https://docs.docker.com/build/cache/backends/#cache-mode) if cache enabled (`min` or `max`). In `min` cache mode, only layers that are exported into the resulting image are cached, while in `max` cache mode, all layers are cached, even those of intermediate steps     |
@@ -379,7 +381,7 @@ jobs:
 
 | Name             | Default               | Description                                                                             |
 |------------------|-----------------------|-----------------------------------------------------------------------------------------|
-| `registry-auths` |                       | Raw authentication to registries, defined as YAML objects          |
+| `registry-auths` |                       | Raw authentication to registries, defined as YAML objects                               |
 | `build-secrets`  |                       | YAML object mapping BuildKit secret IDs to values, with optional nested target mappings |
 | `github-token`   | `${{ github.token }}` | GitHub Token used to authenticate against the repository for Git context                |
 
