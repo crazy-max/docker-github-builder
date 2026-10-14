@@ -6,6 +6,8 @@ updates:
       interval: "daily"
     cooldown:
       default-days: 2
+      exclude:
+        - "docker/*"
     open-pull-requests-limit: 10
     groups:
       crazy-max-dot-github:
