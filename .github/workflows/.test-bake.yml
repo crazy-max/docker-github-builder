@@ -414,7 +414,6 @@ jobs:
       id-token: write
     with:
       artifact-upload: false
-      build-summary: false
       context: test
       output: local
       sbom: true
