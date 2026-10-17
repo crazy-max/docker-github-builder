@@ -375,6 +375,14 @@ jobs:
 | `meta-flavor`             | List   |                                       | [Flavor](https://github.com/docker/metadata-action?tab=readme-ov-file#flavor-input) defines a global behavior for `meta-tags`                                                                                                                                                                        |
 | `buildkit-proxy-network`  | Bool   | `false`                               | Enable BuildKit proxy network mode for default Dockerfile `RUN` networking. See [BuildKit proxy network](#buildkit-proxy-network).                                                                                                                                                                   |
 
+> [!NOTE]
+> The `vars` input is passed to Buildx as explicit Bake variables. Ambient
+> environment lookup for Bake variables is disabled. The `CI` environment variable
+> and variables with `GITHUB_`, `RUNNER_`, or `DOCKER_METADATA_OUTPUT_` prefixes
+> are forwarded as explicit vars for workflows that declare them in their Bake
+> definition. Multiline metadata values are preserved. Caller-provided vars take
+> precedence over these forwarded values.
+
 ### Secrets
 
 | Name             | Default               | Description                                                                             |

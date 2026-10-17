@@ -15,12 +15,54 @@ variable "XX_VERSION" {
   default = null
 }
 
+variable "BUILDX_VERSION" {
+  default = "not-leaked"
+}
+
+variable "CI" {
+  default = ""
+}
+
+variable "GITHUB_SHA" {
+  default = ""
+}
+
+variable "RUNNER_OS" {
+  default = ""
+}
+
+variable "DOCKER_METADATA_OUTPUT_VERSION" {
+  default = ""
+}
+
+variable "DOCKER_METADATA_OUTPUT_TAGS" {
+  default = ""
+}
+
+variable "DOCKER_METADATA_OUTPUT_LABELS" {
+  default = ""
+}
+
 target "go" {
   inherits = ["docker-metadata-action"]
   args = {
     XX_VERSION = XX_VERSION
   }
   dockerfile = "go.Dockerfile"
+}
+
+target "vars" {
+  args = {
+    BUILDX_VERSION                 = BUILDX_VERSION
+    CI                             = CI
+    GITHUB_SHA                     = GITHUB_SHA
+    RUNNER_OS                      = RUNNER_OS
+    XX_VERSION                     = XX_VERSION
+    DOCKER_METADATA_OUTPUT_VERSION = DOCKER_METADATA_OUTPUT_VERSION
+    DOCKER_METADATA_OUTPUT_TAGS    = DOCKER_METADATA_OUTPUT_TAGS
+    DOCKER_METADATA_OUTPUT_LABELS  = DOCKER_METADATA_OUTPUT_LABELS
+  }
+  dockerfile = "vars.Dockerfile"
 }
 
 target "go-cross" {
