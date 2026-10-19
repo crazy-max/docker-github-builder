@@ -8,9 +8,9 @@ on:
         description: "GitHub-hosted Linux runner label or platform mapping to build on"
         required: false
         default: |
-          default=ubuntu-24.04
-          linux/arm=ubuntu-24.04-arm
-          linux/arm64=ubuntu-24.04-arm
+          default=ubuntu-26.04
+          linux/arm=ubuntu-26.04-arm
+          linux/arm64=ubuntu-26.04-arm
       distribute:
         type: boolean
         description: "Whether to distribute the build across multiple runners (one platform per runner)"
@@ -213,7 +213,7 @@ jobs:
       registry-identities: ${{ inputs.registry-identities }}
 
   prepare:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     strategy:
       matrix:
         include:
@@ -1150,7 +1150,7 @@ jobs:
             core.setOutput(`result_${inpIndex}`, JSON.stringify(result));
 
   finalize:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     strategy:
       matrix:
         include:
