@@ -71,7 +71,7 @@ jobs:
           connection_id: ${{ vars.DOCKERHUB_OIDC_CONNECTIONID }}
 
   bake-dockerhub-single-outputs:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     needs:
       - bake-dockerhub-single
     steps:
@@ -157,9 +157,9 @@ jobs:
       output: image
       push: ${{ github.event_name != 'pull_request' }}
       runner: |
-        default=ubuntu-24.04
-        linux/arm=ubuntu-24.04-arm
-        linux/arm64=ubuntu-24.04-arm
+        default=ubuntu-26.04
+        linux/arm=ubuntu-26.04-arm
+        linux/arm64=ubuntu-26.04-arm
       sbom: true
       set: |
         *.args.VERSION={{meta.version}}
@@ -191,7 +191,7 @@ jobs:
           connection_id: ${{ vars.DOCKERHUB_OIDC_CONNECTIONID }}
 
   bake-dockerhub-outputs:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     needs:
       - bake-dockerhub
     steps:
@@ -206,7 +206,7 @@ jobs:
             core.info(JSON.stringify(builderOutputs, null, 2));
 
   bake-dockerhub-scan:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     if: ${{ github.event_name != 'pull_request' }}
     needs:
       - bake-dockerhub
@@ -252,7 +252,7 @@ jobs:
       builder-outputs: ${{ toJSON(needs.bake-dockerhub-nosign.outputs) }}
 
   bake-dockerhub-nosign-outputs:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     needs:
       - bake-dockerhub-nosign
     steps:
@@ -318,7 +318,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
   bake-ghcr-and-dockerhub-outputs:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     needs:
       - bake-ghcr-and-dockerhub
     steps:
@@ -356,7 +356,7 @@ jobs:
       builder-outputs: ${{ toJSON(needs.bake-local.outputs) }}
 
   bake-local-outputs:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     needs:
       - bake-local
     steps:
@@ -393,7 +393,7 @@ jobs:
       builder-outputs: ${{ toJSON(needs.bake-local-single.outputs) }}
 
   bake-local-single-outputs:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     needs:
       - bake-local-single
     steps:
@@ -427,7 +427,7 @@ jobs:
       builder-outputs: ${{ toJSON(needs.bake-local-noupload.outputs) }}
 
   bake-local-noupload-outputs:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     needs:
       - bake-local-noupload
     steps:
@@ -463,7 +463,7 @@ jobs:
       builder-outputs: ${{ toJSON(needs.bake-local-nosign.outputs) }}
 
   bake-local-nosign-outputs:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     needs:
       - bake-local-nosign
     steps:
@@ -504,7 +504,7 @@ jobs:
       contents: read
       id-token: write
     with:
-      runner: ubuntu-24.04
+      runner: ubuntu-26.04
       context: test
       output: image
       push: false

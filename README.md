@@ -723,16 +723,16 @@ The `runner` input accepts either a single GitHub-hosted Linux runner label or a
 newline-delimited platform mapping. A single label is used for every build:
 
 ```yaml
-runner: ubuntu-24.04
+runner: ubuntu-26.04
 ```
 
 The default value uses the standard GitHub-hosted Ubuntu runners:
 
 ```yaml
 runner: |
-  default=ubuntu-24.04
-  linux/arm=ubuntu-24.04-arm
-  linux/arm64=ubuntu-24.04-arm
+  default=ubuntu-26.04
+  linux/arm=ubuntu-26.04-arm
+  linux/arm64=ubuntu-26.04-arm
 ```
 
 A mapping must define a `default` runner. Additional keys are platform prefixes,
@@ -740,9 +740,9 @@ and the most specific matching prefix wins. For example:
 
 ```yaml
 runner: |
-  default=ubuntu-24.04
-  linux=ubuntu-24.04
-  linux/arm=ubuntu-24.04-arm
+  default=ubuntu-26.04
+  linux=ubuntu-26.04
+  linux/arm=ubuntu-26.04-arm
 ```
 
 For example, `linux` matches all Linux platforms, `linux/arm` matches variants

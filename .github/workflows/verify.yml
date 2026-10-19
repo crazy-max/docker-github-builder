@@ -36,7 +36,7 @@ jobs:
       registry-identities: ${{ inputs.registry-identities }}
 
   verify:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     needs:
       - registry-identities
     env:

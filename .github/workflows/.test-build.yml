@@ -70,7 +70,7 @@ jobs:
           connection_id: ${{ vars.DOCKERHUB_OIDC_CONNECTIONID }}
 
   build-dockerhub-single-outputs:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     needs:
       - build-dockerhub-single
     steps:
@@ -156,9 +156,9 @@ jobs:
       platforms: linux/amd64,linux/arm64
       push: ${{ github.event_name != 'pull_request' }}
       runner: |
-        default=ubuntu-24.04
-        linux/arm=ubuntu-24.04-arm
-        linux/arm64=ubuntu-24.04-arm
+        default=ubuntu-26.04
+        linux/arm=ubuntu-26.04-arm
+        linux/arm64=ubuntu-26.04-arm
       sbom: true
       registry-identities: |
         - type: dockerhub
@@ -187,7 +187,7 @@ jobs:
           connection_id: ${{ vars.DOCKERHUB_OIDC_CONNECTIONID }}
 
   build-dockerhub-outputs:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     needs:
       - build-dockerhub
     steps:
@@ -202,7 +202,7 @@ jobs:
             core.info(JSON.stringify(builderOutputs, null, 2));
 
   build-dockerhub-scan:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     if: ${{ github.event_name != 'pull_request' }}
     needs:
       - build-dockerhub
@@ -248,7 +248,7 @@ jobs:
       builder-outputs: ${{ toJSON(needs.build-dockerhub-nosign.outputs) }}
 
   build-dockerhub-nosign-outputs:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     needs:
       - build-dockerhub-nosign
     steps:
@@ -299,7 +299,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
   build-ghcr-outputs:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     needs:
       - build-ghcr
     steps:
@@ -365,7 +365,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
   build-ghcr-and-dockerhub-outputs:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     needs:
       - build-ghcr-and-dockerhub
     steps:
@@ -403,7 +403,7 @@ jobs:
       builder-outputs: ${{ toJSON(needs.build-local.outputs) }}
 
   build-local-outputs:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     needs:
       - build-local
     steps:
@@ -439,7 +439,7 @@ jobs:
       builder-outputs: ${{ toJSON(needs.build-local-single.outputs) }}
 
   build-local-single-outputs:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     needs:
       - build-local-single
     steps:
@@ -473,7 +473,7 @@ jobs:
       builder-outputs: ${{ toJSON(needs.build-local-noupload.outputs) }}
 
   build-local-noupload-outputs:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     needs:
       - build-local-noupload
     steps:
@@ -509,7 +509,7 @@ jobs:
       builder-outputs: ${{ toJSON(needs.build-local-nosign.outputs) }}
 
   build-local-nosign-outputs:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     needs:
       - build-local-nosign
     steps:
@@ -548,7 +548,7 @@ jobs:
       contents: read
       id-token: write
     with:
-      runner: ubuntu-24.04
+      runner: ubuntu-26.04
       build-args: |
         VERSION={{meta.version}}
       file: test/hello.Dockerfile
